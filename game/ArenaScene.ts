@@ -3,8 +3,9 @@ import { type RunePoint, type RuneStroke } from "@/game/runeGesture";
 import { EMBER_LANCE_ASSET } from "@/game/emberLanceAsset";
 import { LIGHTNING_BOLT_ASSET } from "@/game/lightningBoltAsset";
 import { SHIELD_ASSET } from "@/game/shieldAsset";
-import { getSpell, type SpellData, type SpellId } from "@/game/spellData";
+import { getSpell, SPELLS, type SpellData, type SpellId } from "@/game/spellData";
 import { recognizeAnySpell } from "@/game/spellRecognition";
+import { decideOpponentAction, OPPONENT_AI_CONFIG, type OpponentPhase } from "@/game/opponentAI";
 
 export type GestureStatus = "idle" | "drawing" | "recognized" | "failed";
 
@@ -14,9 +15,15 @@ export type GestureFeedback = {
   hint: string;
 };
 
+export type ArenaGameState = "playing" | "victory" | "defeat";
+export type EnemyActivity = "waiting" | "charging" | "flying" | "impact";
+
 export type ArenaCallbacks = {
   onManaChange: (mana: number) => void;
   onTargetHealthChange: (health: number) => void;
+  onPlayerHealthChange: (health: number) => void;
+  onEnemyActivityChange: (activity: EnemyActivity) => void;
+  onGameStateChange: (state: ArenaGameState) => void;
   onCooldownChange: (seconds: number) => void;
   onPhaseChange: (phase: "ready" | "charging" | "flying" | "impact") => void;
   onGestureChange: (feedback: GestureFeedback) => void;
@@ -34,20 +41,34 @@ export class ArenaScene extends Phaser.Scene {
   private cooldownUntil = 0;
   private mana = MAX_MANA;
   private targetHealth = MAX_HEALTH;
+  private playerHealth = MAX_HEALTH;
+  private gameState: ArenaGameState = "playing";
   private projectileSpell: SpellData | null = null;
   private shieldActive = false;
   private shieldUntil = 0;
   private shieldBlockedUntil = 0;
+  private enemyShieldActive = false;
+  private enemyShieldUntil = 0;
+  private enemyShieldBlockedUntil = 0;
   private lastUiUpdate = -1;
   private art!: Phaser.GameObjects.Graphics;
   private emberLance!: Phaser.GameObjects.Image;
+  private enemyEmberLance!: Phaser.GameObjects.Image;
   private lightningBolt!: Phaser.GameObjects.Image;
   private shield!: Phaser.GameObjects.Image;
+  private enemyShield!: Phaser.GameObjects.Image;
   private gestureStrokes: RuneStroke[] = [];
   private activeStroke: RunePoint[] = [];
   private gestureActive = false;
   private gestureFeedback: GestureFeedback = { status: "idle", message: "DRAW RUNE", hint: "DRAW A REGISTERED SPELL SYMBOL" };
   private gestureFeedbackUntil = 0;
+  private enemyPhase: OpponentPhase = "ready";
+  private enemyPhaseStarted = 0;
+  private enemyCooldownUntil = 0;
+  private enemyMana = MAX_MANA;
+  private enemyProjectileSpell: SpellData | null = null;
+  private nextEnemyDecisionAt: number = OPPONENT_AI_CONFIG.openingDelayMs;
+  private enemyActivity: EnemyActivity = "waiting";
 
   constructor(callbacks: ArenaCallbacks, spellId: SpellId = "ember-lance") {
     super({ key: "WizardArena" });
@@ -81,12 +102,22 @@ export class ArenaScene extends Phaser.Scene {
       .setBlendMode(Phaser.BlendModes.ADD)
       .setVisible(false)
       .setDepth(3);
+    this.enemyEmberLance = this.add.image(0, 0, EMBER_LANCE_ASSET.key)
+      .setOrigin(EMBER_LANCE_ASSET.origin.x, EMBER_LANCE_ASSET.origin.y)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false)
+      .setDepth(3);
     this.lightningBolt = this.add.image(0, 0, LIGHTNING_BOLT_ASSET.key)
       .setOrigin(LIGHTNING_BOLT_ASSET.origin.x, LIGHTNING_BOLT_ASSET.origin.y)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setVisible(false)
       .setDepth(3);
     this.shield = this.add.image(0, 0, SHIELD_ASSET.key)
+      .setOrigin(SHIELD_ASSET.origin.x, SHIELD_ASSET.origin.y)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false)
+      .setDepth(4);
+    this.enemyShield = this.add.image(0, 0, SHIELD_ASSET.key)
       .setOrigin(SHIELD_ASSET.origin.x, SHIELD_ASSET.origin.y)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setVisible(false)
@@ -99,6 +130,9 @@ export class ArenaScene extends Phaser.Scene {
     this.callbacks.onPhaseChange("ready");
     this.callbacks.onManaChange(this.mana);
     this.callbacks.onTargetHealthChange(this.targetHealth);
+    this.callbacks.onPlayerHealthChange(this.playerHealth);
+    this.callbacks.onEnemyActivityChange(this.enemyActivity);
+    this.callbacks.onGameStateChange(this.gameState);
     this.gestureFeedback = this.getInitialGesture();
     this.callbacks.onSpellChange(this.spell.id);
     this.callbacks.onGestureChange(this.gestureFeedback);
@@ -107,8 +141,17 @@ export class ArenaScene extends Phaser.Scene {
 
   update(time: number, delta: number) {
     const dt = delta / 1000;
+    if (this.gameState !== "playing") {
+      this.drawArena(time);
+      return;
+    }
     if (this.phase === "ready" && this.mana < MAX_MANA) this.mana = Math.min(MAX_MANA, this.mana + dt * 5);
+    if (this.enemyPhase === "ready" && this.enemyMana < MAX_MANA) this.enemyMana = Math.min(MAX_MANA, this.enemyMana + dt * 5);
     if (this.shieldActive && time >= this.shieldUntil) this.shieldActive = false;
+    if (this.enemyShieldActive && time >= this.enemyShieldUntil) {
+      this.enemyShieldActive = false;
+      if (this.enemyActivity === "charging") this.setEnemyActivity("waiting");
+    }
     if (!this.gestureActive && this.gestureFeedbackUntil > 0 && time >= this.gestureFeedbackUntil) {
       this.gestureFeedbackUntil = 0;
       this.gestureStrokes = [];
@@ -126,21 +169,89 @@ export class ArenaScene extends Phaser.Scene {
       this.phase = "flying"; this.phaseStarted = time; this.callbacks.onPhaseChange("flying");
     } else if (this.phase === "flying" && time - this.phaseStarted > activeSpell.timings.flying) {
       this.phase = "impact"; this.phaseStarted = time;
-      if (this.shieldActive) {
-        this.shieldActive = false;
-        this.shieldBlockedUntil = time + 440;
-      } else if (activeSpell.kind === "offensive") {
-        this.targetHealth = Math.max(0, this.targetHealth - activeSpell.damage);
+      if (activeSpell.kind === "offensive") {
+        if (this.enemyShieldActive) {
+          this.enemyShieldActive = false;
+          this.enemyShieldBlockedUntil = time + 440;
+        } else {
+          this.targetHealth = Math.max(0, this.targetHealth - activeSpell.damage);
+        }
       }
       this.callbacks.onTargetHealthChange(this.targetHealth); this.callbacks.onPhaseChange("impact");
+      if (this.targetHealth <= 0) this.finishGame("victory");
     } else if (this.phase === "impact" && time - this.phaseStarted > activeSpell.timings.impact) {
       this.phase = "ready"; this.projectileSpell = null; this.callbacks.onPhaseChange("ready");
     }
+    if (this.gameState === "playing") this.updateOpponent(time);
     this.drawArena(time);
   }
 
+  private updateOpponent(time: number) {
+    if (this.enemyPhase === "ready" && !this.enemyShieldActive && time >= this.nextEnemyDecisionAt) {
+      const decision = decideOpponentAction({
+        now: time,
+        mana: this.enemyMana,
+        cooldownUntil: this.enemyCooldownUntil,
+        phase: this.enemyPhase,
+        playerHealth: this.playerHealth,
+        opponentHealth: this.targetHealth,
+        playerShieldActive: this.shieldActive,
+        hasActiveProjectile: this.enemyProjectileSpell !== null,
+        availableSpells: SPELLS,
+      }, getSpell("ember-lance"));
+      this.nextEnemyDecisionAt = time + OPPONENT_AI_CONFIG.decisionIntervalMs;
+      if (decision.action === "cast") this.castOpponentSpell(time, decision.spellId ?? "ember-lance");
+    }
+    const enemySpell = this.enemyProjectileSpell;
+    if (this.enemyPhase === "charging" && enemySpell && time - this.enemyPhaseStarted >= enemySpell.timings.charging) {
+      this.enemyPhase = "flying"; this.enemyPhaseStarted = time; this.setEnemyActivity("flying");
+    } else if (this.enemyPhase === "flying" && enemySpell && time - this.enemyPhaseStarted >= enemySpell.timings.flying) {
+      this.enemyPhase = "impact"; this.enemyPhaseStarted = time; this.setEnemyActivity("impact");
+      if (this.shieldActive) {
+        this.shieldActive = false;
+        this.shieldBlockedUntil = time + 440;
+      } else {
+        this.playerHealth = Math.max(0, this.playerHealth - enemySpell.damage);
+        this.callbacks.onPlayerHealthChange(this.playerHealth);
+      }
+      if (this.playerHealth <= 0) this.finishGame("defeat");
+    } else if (this.enemyPhase === "impact" && enemySpell && time - this.enemyPhaseStarted >= enemySpell.timings.impact) {
+      this.enemyPhase = "ready"; this.enemyProjectileSpell = null; this.setEnemyActivity("waiting");
+    }
+    if (this.enemyPhase === "ready" && this.enemyMana < MAX_MANA) this.callbacks.onManaChange(this.mana);
+  }
+
+  private castOpponentSpell(now: number, spellId: SpellId) {
+    const spell = getSpell(spellId);
+    if (this.enemyMana < spell.manaCost || this.enemyPhase !== "ready" || now < this.enemyCooldownUntil) return;
+    this.enemyMana -= spell.manaCost;
+    this.enemyCooldownUntil = now + spell.cooldown * 1000;
+    if (spell.kind === "defensive") {
+      this.enemyShieldActive = true;
+      this.enemyShieldUntil = now + (spell.shieldDurationMs ?? 1600);
+      this.enemyShieldBlockedUntil = 0;
+      this.setEnemyActivity("charging");
+      return;
+    }
+    this.enemyProjectileSpell = spell;
+    this.enemyPhase = "charging";
+    this.enemyPhaseStarted = now;
+    this.setEnemyActivity("charging");
+  }
+
+  private setEnemyActivity(activity: EnemyActivity) {
+    this.enemyActivity = activity;
+    this.callbacks.onEnemyActivityChange(activity);
+  }
+
+  private finishGame(state: Exclude<ArenaGameState, "playing">) {
+    if (this.gameState !== "playing") return;
+    this.gameState = state;
+    this.callbacks.onGameStateChange(state);
+  }
+
   private handlePointerDown(pointer: Phaser.Input.Pointer) {
-    if (pointer.wasTouch || pointer.button !== 0 || this.gestureActive || (this.phase !== "ready" && this.phase !== "flying")) return;
+    if (this.gameState !== "playing" || pointer.wasTouch || pointer.button !== 0 || this.gestureActive || (this.phase !== "ready" && this.phase !== "flying")) return;
     this.gestureActive = true;
     const now = this.game.loop?.time ?? 0;
     this.activeStroke = [{ x: pointer.worldX, y: pointer.worldY, timestamp: now }];
@@ -223,7 +334,7 @@ export class ArenaScene extends Phaser.Scene {
     const hitT = this.phase === "impact" ? Phaser.Math.Clamp((time - this.phaseStarted) / activeSpell.timings.impact, 0, 1) : 0;
     const target: Point = { x: targetBase.x + (this.phase === "impact" ? Math.sin(hitT * Math.PI * 8) * (1 - hitT) * 10 : 0), y: targetBase.y };
     this.art.clear(); this.drawBackdrop(width, height, t); this.drawArenaFloor(width, height, t);
-     this.drawWizard(wizard, t); this.drawTarget(target, t, hitT); this.drawSpell(wizard, target, time, t); this.drawShield(wizard, time, t); this.drawGesture(time);
+       this.drawWizard(wizard, t); this.drawTarget(target, t, hitT); this.drawSpell(wizard, target, time, t); this.drawEnemySpell(wizard, target, time, t); this.drawShield(wizard, time, t); this.drawEnemyShield(target, time, t); this.drawGesture(time);
   }
 
   private drawGesture(time: number) {
@@ -279,13 +390,14 @@ export class ArenaScene extends Phaser.Scene {
     g.fillStyle(0x050819, 0.55); g.fillEllipse(x, y + 37, 120, 24);
     if (this.phase === "charging") { const pulse = 42 + Math.sin(t * 12) * 5; g.lineStyle(2, 0x75e4d7, 0.4); g.strokeCircle(x + 31, y - 35, pulse); g.lineStyle(1, 0xffd166, 0.75); g.strokeCircle(x + 31, y - 35, pulse + 9); }
     g.fillStyle(0x263576, 1); g.beginPath(); g.moveTo(x - 37, y + 26); g.lineTo(x - 25, y - 19); g.lineTo(x + 24, y - 19); g.lineTo(x + 46, y + 28); g.lineTo(x + 17, y + 36); g.lineTo(x - 42, y + 31); g.closePath(); g.fillPath(); g.fillStyle(0x3e56ac, 1); g.beginPath(); g.moveTo(x - 23, y - 16); g.lineTo(x + 2, y - 8); g.lineTo(x + 25, y - 17); g.lineTo(x + 34, y + 26); g.lineTo(x + 3, y + 32); g.lineTo(x - 22, y + 24); g.closePath(); g.fillPath();
-    g.fillStyle(0xe0a56d, 1); g.fillCircle(x + 3, y - 39, 18); g.fillStyle(0x101835, 1); g.fillTriangle(x - 15, y - 42, x + 20, y - 42, x + 2, y - 7); g.fillStyle(0x12193d, 1); g.beginPath(); g.moveTo(x - 30, y - 46); g.lineTo(x + 2, y - 95); g.lineTo(x + 42, y - 49); g.lineTo(x + 21, y - 40); g.lineTo(x - 28, y - 40); g.closePath(); g.fillPath(); g.fillStyle(0x3b4fa0, 1); g.beginPath(); g.moveTo(x - 28, y - 47); g.lineTo(x + 2, y - 91); g.lineTo(x + 37, y - 48); g.closePath(); g.fillPath(); g.fillStyle(0xf3c36d, 1); g.fillTriangle(x + 1, y - 89, x + 6, y - 76, x - 3, y - 76); g.fillStyle(0x171d43, 1); g.fillCircle(x - 3, y - 40, 2); g.fillCircle(x + 10, y - 40, 2); g.lineStyle(3, 0x6f4d32, 1); g.lineBetween(x - 39, y - 12, x - 44, y + 42); g.fillStyle(0x9fffea, 0.9); g.fillCircle(x - 44, y + 42, 4); g.fillStyle(0xffd166, 0.8); g.fillCircle(x + 32, y - 35, 7); g.fillStyle(0xfff2bd, 1); g.fillCircle(x + 32, y - 35, 3);
+     g.fillStyle(0xe0a56d, 1); g.fillCircle(x + 3, y - 39, 18); g.fillStyle(0x101835, 1); g.fillTriangle(x - 15, y - 42, x + 20, y - 42, x + 2, y - 7); g.fillStyle(0x12193d, 1); g.beginPath(); g.moveTo(x - 30, y - 46); g.lineTo(x + 2, y - 95); g.lineTo(x + 42, y - 49); g.lineTo(x + 21, y - 40); g.lineTo(x - 28, y - 40); g.closePath(); g.fillPath(); g.fillStyle(0x3b4fa0, 1); g.beginPath(); g.moveTo(x - 28, y - 47); g.lineTo(x + 2, y - 91); g.lineTo(x + 37, y - 48); g.closePath(); g.fillPath(); g.fillStyle(0xf3c36d, 1); g.fillTriangle(x + 1, y - 89, x + 6, y - 76, x - 3, y - 76); g.fillStyle(0x171d43, 1); g.fillCircle(x - 3, y - 40, 2); g.fillCircle(x + 10, y - 40, 2); g.lineStyle(3, 0x6f4d32, 1); g.lineBetween(x - 39, y - 12, x - 44, y + 42); g.fillStyle(0x9fffea, 0.9); g.fillCircle(x - 44, y + 42, 4); g.fillStyle(0xffd166, 0.8); g.fillCircle(x + 32, y - 35, 7); g.fillStyle(0xfff2bd, 1); g.fillCircle(x + 32, y - 35, 3);
+     g.fillStyle(0x1c2446, 1); g.fillRect(x - 48, y + 47, 96, 7); g.fillStyle(0xff784e, 1); g.fillRect(x - 44, y + 49, 88 * (this.playerHealth / MAX_HEALTH), 3);
   }
 
   private drawTarget(p: Point, t: number, hitT: number) {
     const g = this.art; const x = p.x; const y = p.y; const flash = this.phase === "impact" ? 0.55 * (1 - hitT) : 0; const activeSpell = this.projectileSpell ?? this.spell;
     g.fillStyle(0x050819, 0.6); g.fillEllipse(x, y + 48, 150, 30); g.fillStyle(0x3e4669, 1); g.beginPath(); g.moveTo(x - 48, y + 37); g.lineTo(x - 43, y - 23); g.lineTo(x - 25, y - 48); g.lineTo(x + 26, y - 48); g.lineTo(x + 47, y - 18); g.lineTo(x + 41, y + 39); g.closePath(); g.fillPath(); g.fillStyle(0x596487, 1); g.fillTriangle(x - 39, y - 19, x - 20, y - 47, x - 8, y - 18); g.fillTriangle(x + 4, y - 45, x + 26, y - 42, x + 39, y - 16); g.fillStyle(0x273052, 1); g.fillCircle(x - 20, y - 9, 6); g.fillCircle(x + 20, y - 9, 6); g.fillStyle(0xffa94d, 1); g.fillCircle(x - 20, y - 9, 3); g.fillCircle(x + 20, y - 9, 3); g.fillStyle(0xd86f4e, 0.9); g.fillCircle(x, y + 12, 13); g.fillStyle(0xffca63, 0.85); g.fillCircle(x, y + 12, 7 + Math.sin(t * 5) * 1.5); g.fillStyle(0x1c2446, 1); g.fillRect(x - 48, y + 30, 96, 9); g.fillStyle(0x63e3c9, 1); g.fillRect(x - 44, y + 32, 88 * (this.targetHealth / MAX_HEALTH), 5);
-    if (flash > 0) { g.fillStyle(activeSpell.visualKind === "lightning" ? 0xd9faff : 0xfff4cf, flash); g.fillCircle(x, y, 62 * flash + 18); }
+     if (flash > 0) { g.fillStyle(activeSpell.visualKind === "lightning" ? 0xd9faff : 0xfff4cf, flash); g.fillCircle(x, y, 62 * flash + 18); }
   }
 
   private drawSpell(wizard: Point, target: Point, time: number, t: number) {
@@ -331,6 +443,83 @@ export class ArenaScene extends Phaser.Scene {
       for (let i = 0; i < 18; i += 1) {
         const a = (Math.PI * 2 * i) / 18 + 0.2; const d = 25 + p * 75 + (i % 3) * 10;
         this.art.fillStyle(i % 3 === 0 ? 0xfff2bd : 0xff704d, (1 - p) * 0.85); this.art.fillCircle(destination.x + Math.cos(a) * d, destination.y + Math.sin(a) * d, 2 + (1 - p) * 2);
+      }
+    }
+  }
+
+  private drawEnemySpell(wizard: Point, target: Point, time: number, t: number) {
+    const activeSpell = this.enemyProjectileSpell;
+    if (!activeSpell || this.enemyPhase === "ready") {
+      this.enemyEmberLance.setVisible(false);
+      this.lightningBolt.setVisible(false);
+      return;
+    }
+    if (activeSpell.visualKind === "lightning") {
+      this.drawEnemyLightningSpell(wizard, target, time, t);
+      return;
+    }
+    const elapsed = time - this.enemyPhaseStarted;
+    const origin = { x: target.x - 32, y: target.y - 36 };
+    const destination = { x: wizard.x + 56, y: wizard.y - 41 };
+    if (this.enemyPhase === "charging") {
+      const progress = Phaser.Math.Clamp(elapsed / activeSpell.timings.charging, 0, 1);
+      this.drawMagicOrb(origin, 8 + progress * 13, t, 1 - progress * 0.2);
+      this.enemyEmberLance.setPosition(origin.x, origin.y).setRotation(Math.PI).setScale(0.12 + progress * 0.2).setAlpha(0.18 + progress * 0.62).setVisible(true);
+    } else if (this.enemyPhase === "flying") {
+      const progress = Phaser.Math.Clamp(elapsed / activeSpell.timings.flying, 0, 1);
+      const x = Phaser.Math.Interpolation.QuadraticBezier(progress, origin.x, (origin.x + destination.x) / 2, destination.x);
+      const y = Phaser.Math.Interpolation.QuadraticBezier(progress, origin.y, Math.min(origin.y, destination.y) - 80, destination.y);
+      const angle = Phaser.Math.Angle.Between(origin.x, origin.y, destination.x, destination.y);
+      for (let index = 10; index >= 1; index -= 1) {
+        const trailProgress = Math.max(0, progress - index * 0.018);
+        const trailX = Phaser.Math.Interpolation.QuadraticBezier(trailProgress, origin.x, (origin.x + destination.x) / 2, destination.x);
+        const trailY = Phaser.Math.Interpolation.QuadraticBezier(trailProgress, origin.y, Math.min(origin.y, destination.y) - 80, destination.y);
+        this.art.fillStyle(index % 2 ? 0xff704d : 0xffd166, 0.08 + (11 - index) * 0.055);
+        this.art.fillCircle(trailX, trailY, 4 + (11 - index) * 0.85);
+        this.drawFlameRibbon(trailX, trailY, angle, 30 + (11 - index) * 2, t + index * 0.08, 0.32 + (11 - index) * 0.035);
+      }
+      this.drawMagicOrb({ x, y }, 14 + Math.sin(t * 11) * 2, t, 1);
+      this.enemyEmberLance.setPosition(x, y).setRotation(angle).setScale(0.28 + Math.sin(t * 13) * 0.018).setAlpha(0.96).setVisible(true);
+    } else {
+      const progress = Phaser.Math.Clamp(elapsed / activeSpell.timings.impact, 0, 1);
+      const radius = 20 + progress * 95;
+      this.art.lineStyle(5 * (1 - progress), 0xffd166, 0.9 * (1 - progress)); this.art.strokeCircle(destination.x, destination.y, radius);
+      this.art.lineStyle(2, 0xff704d, 0.65 * (1 - progress)); this.art.strokeCircle(destination.x, destination.y, radius * 0.6);
+    }
+  }
+
+  private drawEnemyLightningSpell(wizard: Point, target: Point, time: number, t: number) {
+    const activeSpell = this.enemyProjectileSpell;
+    if (!activeSpell) return;
+    this.enemyEmberLance.setVisible(false);
+    this.lightningBolt.setVisible(false);
+    const elapsed = time - this.enemyPhaseStarted;
+    const origin = { x: target.x - 32, y: target.y - 36 };
+    const destination = { x: wizard.x + 56, y: wizard.y - 41 };
+    if (this.enemyPhase === "charging") {
+      const progress = Phaser.Math.Clamp(elapsed / activeSpell.timings.charging, 0, 1);
+      this.drawElectricOrb(origin, 8 + progress * 13, t, 1 - progress * 0.2);
+      this.lightningBolt.setPosition(origin.x, origin.y).setRotation(Math.PI - 0.08).setScale(0.1 + progress * 0.22).setAlpha(0.18 + progress * 0.62).setVisible(true);
+    } else if (this.enemyPhase === "flying") {
+      const progress = Phaser.Math.Clamp(elapsed / activeSpell.timings.flying, 0, 1);
+      const x = Phaser.Math.Interpolation.QuadraticBezier(progress, origin.x, (origin.x + destination.x) / 2, destination.x);
+      const y = Phaser.Math.Interpolation.QuadraticBezier(progress, origin.y, Math.min(origin.y, destination.y) - 80, destination.y);
+      const angle = Phaser.Math.Angle.Between(origin.x, origin.y, destination.x, destination.y);
+      this.drawElectricOrb({ x, y }, 14 + Math.sin(t * 17) * 2, t, 1);
+      this.lightningBolt.setPosition(x, y).setRotation(angle).setScale(0.28 + Math.sin(t * 18) * 0.018).setAlpha(0.96).setVisible(true);
+      for (let index = 1; index <= 8; index += 1) {
+        const trailProgress = Math.max(0, progress - index * 0.02);
+        const trailX = Phaser.Math.Interpolation.QuadraticBezier(trailProgress, origin.x, (origin.x + destination.x) / 2, destination.x);
+        const trailY = Phaser.Math.Interpolation.QuadraticBezier(trailProgress, origin.y, Math.min(origin.y, destination.y) - 80, destination.y);
+        this.art.fillStyle(index % 2 ? 0x6685ff : 0xb8f5ff, 0.1); this.art.fillCircle(trailX, trailY, 3 + index * 0.6);
+      }
+    } else {
+      const progress = Phaser.Math.Clamp(elapsed / activeSpell.timings.impact, 0, 1);
+      const radius = 20 + progress * 95;
+      this.art.lineStyle(6 * (1 - progress), 0xb7f7ff, 0.92 * (1 - progress)); this.art.strokeCircle(destination.x, destination.y, radius);
+      for (let index = 0; index < 8; index += 1) {
+        const angle = (Math.PI * 2 * index) / 8 + t * 0.6;
+        this.drawElectricArc(destination, { x: destination.x + Math.cos(angle) * (28 + progress * 82), y: destination.y + Math.sin(angle) * (28 + progress * 82) }, t + index * 0.6, (1 - progress) * 0.82);
       }
     }
   }
@@ -429,6 +618,19 @@ export class ArenaScene extends Phaser.Scene {
         const angle = (Math.PI * 2 * index) / 8 + t;
         this.art.lineBetween(wizard.x, wizard.y - 36, wizard.x + Math.cos(angle) * 112, wizard.y - 36 + Math.sin(angle) * 112);
       }
+    }
+  }
+
+  private drawEnemyShield(target: Point, time: number, t: number) {
+    const active = this.enemyShieldActive || time < this.enemyShieldBlockedUntil;
+    this.enemyShield.setVisible(false);
+    if (!active) return;
+    const blocked = !this.enemyShieldActive;
+    const remaining = this.enemyShieldActive ? Phaser.Math.Clamp((this.enemyShieldUntil - time) / 500, 0, 1) : Phaser.Math.Clamp((this.enemyShieldBlockedUntil - time) / 440, 0, 1);
+    this.enemyShield.setPosition(target.x, target.y - 36).setScale((0.96 + remaining * 0.08) * (1 + Math.sin(t * 8) * 0.025)).setAlpha(blocked ? remaining * 0.9 : 0.88).setVisible(true);
+    if (blocked) {
+      this.art.lineStyle(4 * remaining, 0xf3ffff, remaining * 0.9);
+      this.art.strokeCircle(target.x, target.y - 36, 92 + (1 - remaining) * 20);
     }
   }
 }

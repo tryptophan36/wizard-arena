@@ -1,10 +1,20 @@
 # Wizard Arena
 
 Wizard Arena is a Next.js browser-game project where players cast spells as
-wizards and defeat their opponents. The first playable slice is now live: a
-procedural Ember Sanctum arena with the Lyra Vell wizard, the Ashen Warden
-training target, and a data-driven spellbook containing Ember Lance and
-Lightning plus the reactive Aegis shield.
+wizards and defeat intelligent computer opponents. The current game flow has
+a home menu, a computer duel, a spell book, three drawable spells, and a
+victory/defeat loop.
+
+## Game flow
+
+- `/` — home menu with `START GAME`, `COMPUTER`, `MULTIPLAYER` (not implemented), and `SPELL BOOK`.
+- `/arena` — local computer duel against the Ashen Warden.
+- `/spells` — learn every currently available rune before entering the arena.
+
+The computer opponent evaluates its mana, cooldown, health, projectile state,
+and the player's shield before choosing between Ember Lance, Lightning, and
+Aegis. It uses deterministic timing and local simulation; there is no network
+or multiplayer implementation yet.
 
 ## First playable slice
 

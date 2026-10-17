@@ -6,7 +6,7 @@ export default function SpellsPage() {
     <main className="spellbook-page">
       <div className="spellbook-stars" aria-hidden="true" />
       <header className="spellbook-header">
-        <Link className="spellbook-back" href="/">
+        <Link className="spellbook-back" href="/arena">
           <span aria-hidden="true">←</span> RETURN TO ARENA
         </Link>
         <div className="spellbook-brand">
@@ -68,7 +68,7 @@ export default function SpellsPage() {
             </ol>
             <div className="spell-card-footer">
               <div className="spell-tags">{spell.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
-              <Link className="arena-cta" href={`/?spell=${spell.id}`}>LEARN IN ARENA <span aria-hidden="true">↗</span></Link>
+              <Link className="arena-cta" href={`/arena?spell=${spell.id}`}>LEARN IN ARENA <span aria-hidden="true">↗</span></Link>
             </div>
           </article>
         ))}
@@ -76,7 +76,7 @@ export default function SpellsPage() {
 
       <footer className="spellbook-footer">
         <div><p className="eyebrow">ARCHIVE STATUS</p><p className="footer-prompt">Three patterns ready for the circuit.</p></div>
-        <Link className="arena-cta" href="/">RETURN TO ARENA <span aria-hidden="true">↗</span></Link>
+        <Link className="arena-cta" href="/arena">RETURN TO ARENA <span aria-hidden="true">↗</span></Link>
       </footer>
     </main>
   );

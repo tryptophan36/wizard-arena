@@ -10,7 +10,7 @@ type ArenaGame = {
   scene: { getScene: (key: string) => unknown };
 };
 
-export default function PhaserArena({ onManaChange, onTargetHealthChange, onCooldownChange, onPhaseChange, onGestureChange, onSpellChange, spellId }: PhaserArenaProps) {
+export default function PhaserArena({ onManaChange, onTargetHealthChange, onPlayerHealthChange, onEnemyActivityChange, onGameStateChange, onCooldownChange, onPhaseChange, onGestureChange, onSpellChange, spellId }: PhaserArenaProps) {
   const mountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -20,7 +20,7 @@ export default function PhaserArena({ onManaChange, onTargetHealthChange, onCool
     async function boot() {
       const { createArenaGame } = await import("@/game/ArenaScene");
       if (cancelled || !mountRef.current) return;
-      game = createArenaGame(mountRef.current, { onManaChange, onTargetHealthChange, onCooldownChange, onPhaseChange, onGestureChange, onSpellChange }, spellId);
+      game = createArenaGame(mountRef.current, { onManaChange, onTargetHealthChange, onPlayerHealthChange, onEnemyActivityChange, onGameStateChange, onCooldownChange, onPhaseChange, onGestureChange, onSpellChange }, spellId);
     }
 
     void boot();
@@ -28,7 +28,7 @@ export default function PhaserArena({ onManaChange, onTargetHealthChange, onCool
       cancelled = true;
       game?.destroy(true);
     };
-  }, [onManaChange, onTargetHealthChange, onCooldownChange, onPhaseChange, onGestureChange, onSpellChange, spellId]);
+  }, [onManaChange, onTargetHealthChange, onPlayerHealthChange, onEnemyActivityChange, onGameStateChange, onCooldownChange, onPhaseChange, onGestureChange, onSpellChange, spellId]);
 
   return <div ref={mountRef} className="arena-canvas" aria-label="Playable wizard arena" />;
 }
