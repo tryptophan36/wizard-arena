@@ -58,7 +58,7 @@ export default function SpellsPage() {
               </div>
               <div>
                 <span className="detail-label">GESTURE</span>
-                <strong>{spell.gesture.type === "three-stroke" ? "THREE STROKES" : "TWO STROKES"}</strong>
+                <strong>{spell.gesture.type === "three-stroke" ? "THREE STROKES" : spell.gesture.type === "one-stroke" ? "ONE STROKE" : "TWO STROKES"}</strong>
                 <p>{spell.gesture.hint}</p>
               </div>
             </div>

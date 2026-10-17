@@ -4,7 +4,7 @@ export type OpponentPhase = "ready" | "charging" | "flying" | "impact";
 
 export type OpponentDecision = {
   action: "wait" | "cast";
-  reason: "opening-ritual" | "recharging" | "cooldown" | "phase" | "pressure" | "execute";
+  reason: "opening-ritual" | "recharging" | "cooldown" | "phase" | "stunned" | "pressure" | "execute";
   spellId?: SpellId;
 };
 
@@ -17,6 +17,7 @@ export type OpponentAIState = {
   opponentHealth: number;
   playerShieldActive: boolean;
   hasActiveProjectile: boolean;
+  stunned?: boolean;
   availableSpells?: readonly SpellData[];
 };
 
@@ -29,6 +30,7 @@ export const OPPONENT_AI_CONFIG = {
 } as const;
 
 export function decideOpponentAction(state: OpponentAIState, spell: SpellData): OpponentDecision {
+  if (state.stunned) return { action: "wait", reason: "stunned" };
   if (state.now < OPPONENT_AI_CONFIG.openingDelayMs) return { action: "wait", reason: "opening-ritual" };
   if (state.phase !== "ready" || state.hasActiveProjectile) return { action: "wait", reason: "phase" };
   if (state.now < state.cooldownUntil) return { action: "wait", reason: "cooldown" };

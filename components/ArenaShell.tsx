@@ -22,7 +22,7 @@ export default function ArenaShell() {
   const [gameState, setGameState] = useState<ArenaGameState>("playing");
   const [cooldown, setCooldown] = useState(0);
   const [phase, setPhase] = useState<"ready" | "charging" | "flying" | "impact">("ready");
-  const [gesture, setGesture] = useState<GestureFeedback>({ status: "idle", message: `DRAW ${spell.name} RUNE`, hint: spell.id === "lightning" ? spell.gesture.hint : "DOWN · UP-RIGHT HOOK · LIFT OPTIONAL" });
+  const [gesture, setGesture] = useState<GestureFeedback>({ status: "idle", message: `DRAW ${spell.name} RUNE`, hint: spell.gesture.hint });
   const phaseLabel = phase === "ready" ? "READY TO CAST" : phase === "charging" ? "WEAVING SPELL" : phase === "flying" ? "SPELL IN FLIGHT" : "DIRECT HIT";
 
   return (
@@ -38,7 +38,7 @@ export default function ArenaShell() {
       <div className="target-name"><span className="target-chevron">◆</span><span>ASHEN WARDEN</span><small>LOCAL OPPONENT · {enemyActivity.toUpperCase()}</small></div>
       <section className="hud spell-panel"><div className="spell-icon"><span>{spell.symbol}</span></div><div className="spell-copy"><p className="eyebrow">EQUIPPED SPELL</p><h2>{spell.name}</h2><p className="spell-description">{spell.description}</p></div><div className="spell-cost"><strong>{spell.manaCost}</strong><span>MANA</span></div><div className={`gesture-status gesture-${gesture.status}`} aria-live="polite"><strong>{gesture.message}</strong><span>{gesture.hint}</span>{phase !== "ready" && <small>{phaseLabel} · {cooldown.toFixed(1)}s</small>}</div></section>
       <section className="hud player-status"><div className="wizard-badge">✧</div><div className="player-copy"><p className="eyebrow">DUELIST</p><h2>LYRA VELL</h2></div><div className="resource-block"><div className="resource-label"><span>VITALITY</span><strong>{playerHealth} / 100</strong></div><div className="resource-bar vitality"><span style={{ width: `${playerHealth}%` }} /></div></div><div className="resource-block"><div className="resource-label"><span>MANA</span><strong>{Math.round(mana)} / 100</strong></div><div className="resource-bar mana"><span style={{ width: `${mana}%` }} /></div></div></section>
-      <footer className="hud footer-hint"><span className="mouse-icon">◉</span><span>{spell.id === "lightning" ? spell.gesture.hint : "DRAW DOWN · HOOK UP-RIGHT · LIFT OPTIONAL"}</span><i /><span>RESONANCE</span><div className="resonance-dots"><b /><b /><b /><b /><b /></div></footer>
+      <footer className="hud footer-hint"><span className="mouse-icon">◉</span><span>{spell.gesture.hint}</span><i /><span>RESONANCE</span><div className="resonance-dots"><b /><b /><b /><b /><b /></div></footer>
       {gameState !== "playing" && <section className={`game-result game-result-${gameState}`} role="status"><p className="eyebrow">DUEL COMPLETE</p><h2>{gameState === "victory" ? "WARDEN VANQUISHED" : "LYRA FALLS"}</h2><p>{gameState === "victory" ? "Your rune timing broke the Ashen Warden." : "The Ashen Warden's spells found their mark."}</p><div className="result-actions"><Link className="result-action result-action-primary" href="/arena">PLAY AGAIN</Link><Link className="result-action" href="/">RETURN TO MENU</Link></div></section>}
     </main>
   );

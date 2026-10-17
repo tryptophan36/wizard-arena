@@ -31,10 +31,11 @@
     "symbol": "ϟ",
     "school": "STORM SPIRE",
     "description": "A chained bolt of stormlight.",
-    "effect": "Direct hit. A storm-charged bolt arcs into the target, branching on impact with a brief electric afterimage.",
-    "manaCost": 30,
+    "effect": "Direct hit. A storm-charged bolt arcs into the target, branching on impact with a brief electric afterimage and a short stun.",
+    "manaCost": 35,
     "cooldown": 2.8,
-    "damage": 30,
+    "damage": 20,
+    "stunDurationMs": 1800,
     "difficulty": "ADEPT",
     "timings": { "charging": 420, "flying": 820, "impact": 720 },
     "tags": ["CHAINED", "STORM", "SINGLE TARGET"],
@@ -70,13 +71,11 @@
     "visualKind": "shield",
     "kind": "defensive",
     "gesture": {
-      "type": "three-stroke",
-      "recognizer": "square-cross",
-      "hint": "TRACE A SQUARE · THEN DRAW BOTH DIAGONALS",
+      "type": "one-stroke",
+      "recognizer": "aegis",
+      "hint": "TRACE ONE CLOSED SQUARE",
       "steps": [
-        { "number": "01", "title": "Trace the ward", "description": "Draw one clean square and close the final edge where you began.", "gesture": "START  □  CLOSE" },
-        { "number": "02", "title": "Draw the first diagonal", "description": "Cut from one corner of the ward to its opposite corner.", "gesture": "CORNER  ↘  CORNER" },
-        { "number": "03", "title": "Cross the ward", "description": "Draw the second diagonal across the remaining corners to complete the Aegis seal.", "gesture": "CORNER  ↙  CORNER" }
+        { "number": "01", "title": "Trace the ward", "description": "Draw one clean square and close the final edge where you began.", "gesture": "START  □  CLOSE" }
       ]
     }
   }

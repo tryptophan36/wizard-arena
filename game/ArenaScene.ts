@@ -16,7 +16,7 @@ export type GestureFeedback = {
 };
 
 export type ArenaGameState = "playing" | "victory" | "defeat";
-export type EnemyActivity = "waiting" | "charging" | "flying" | "impact";
+export type EnemyActivity = "waiting" | "charging" | "flying" | "impact" | "stunned";
 
 export type ArenaCallbacks = {
   onManaChange: (mana: number) => void;
@@ -67,6 +67,7 @@ export class ArenaScene extends Phaser.Scene {
   private enemyCooldownUntil = 0;
   private enemyMana = MAX_MANA;
   private enemyProjectileSpell: SpellData | null = null;
+  private enemyStunnedUntil = 0;
   private nextEnemyDecisionAt: number = OPPONENT_AI_CONFIG.openingDelayMs;
   private enemyActivity: EnemyActivity = "waiting";
 
@@ -175,6 +176,7 @@ export class ArenaScene extends Phaser.Scene {
           this.enemyShieldBlockedUntil = time + 440;
         } else {
           this.targetHealth = Math.max(0, this.targetHealth - activeSpell.damage);
+          if (activeSpell.stunDurationMs) this.stunOpponent(time, activeSpell.stunDurationMs);
         }
       }
       this.callbacks.onTargetHealthChange(this.targetHealth); this.callbacks.onPhaseChange("impact");
@@ -187,6 +189,13 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private updateOpponent(time: number) {
+    if (time < this.enemyStunnedUntil) {
+      this.enemyPhase = "ready";
+      this.enemyPhaseStarted = time;
+      this.enemyProjectileSpell = null;
+      if (this.enemyActivity !== "stunned") this.setEnemyActivity("stunned");
+      return;
+    }
     if (this.enemyPhase === "ready" && !this.enemyShieldActive && time >= this.nextEnemyDecisionAt) {
       const decision = decideOpponentAction({
         now: time,
@@ -197,6 +206,7 @@ export class ArenaScene extends Phaser.Scene {
         opponentHealth: this.targetHealth,
         playerShieldActive: this.shieldActive,
         hasActiveProjectile: this.enemyProjectileSpell !== null,
+        stunned: time < this.enemyStunnedUntil,
         availableSpells: SPELLS,
       }, getSpell("ember-lance"));
       this.nextEnemyDecisionAt = time + OPPONENT_AI_CONFIG.decisionIntervalMs;
@@ -237,6 +247,16 @@ export class ArenaScene extends Phaser.Scene {
     this.enemyPhase = "charging";
     this.enemyPhaseStarted = now;
     this.setEnemyActivity("charging");
+  }
+
+  private stunOpponent(now: number, durationMs: number) {
+    if (!Number.isFinite(durationMs) || durationMs <= 0) return;
+    this.enemyStunnedUntil = Math.max(this.enemyStunnedUntil, now + durationMs);
+    this.enemyPhase = "ready";
+    this.enemyPhaseStarted = now;
+    this.enemyProjectileSpell = null;
+    this.nextEnemyDecisionAt = Math.max(this.nextEnemyDecisionAt, this.enemyStunnedUntil);
+    this.setEnemyActivity("stunned");
   }
 
   private setEnemyActivity(activity: EnemyActivity) {

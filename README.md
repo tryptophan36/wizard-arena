@@ -13,16 +13,18 @@ victory/defeat loop.
 
 The computer opponent evaluates its mana, cooldown, health, projectile state,
 and the player's shield before choosing between Ember Lance, Lightning, and
-Aegis. It uses deterministic timing and local simulation; there is no network
-or multiplayer implementation yet.
+Aegis. A successful Lightning hit deals 20 damage and stuns the computer for
+1.8 seconds, interrupting any active cast. It uses deterministic timing and
+local simulation; there is no network or multiplayer implementation yet.
 
 ## First playable slice
 
 - Draw Ember Lance with its long downward stroke followed by an up-right hook.
 - Open the spellbook to learn Lightning: draw three connected diagonal strokes
-  (down-right, down-left, down-right), or draw the zig-zag continuously.
-- Draw Aegis as a closed square followed by two opposite diagonals while a
-  projectile is travelling to raise a ward and absorb that impact.
+  (down-right, down-left, down-right), or draw the zig-zag continuously. It
+  costs 35 mana, deals 20 damage, and briefly stuns the computer on hit.
+- Draw Aegis as one closed square while a projectile is travelling to raise a
+  ward and absorb that impact; do not add the former crossing diagonals.
 - Select `LEARN IN ARENA` on a spell card to equip it with the matching symbol
   and gesture; opening `/` keeps Ember Lance equipped by default.
 - Open `/spells` or choose `SPELLBOOK` in the arena header to study the rune
@@ -43,12 +45,14 @@ and effects interfaces.
 ## Adding a spell
 
 Spell content lives in [`data/spells.json`](data/spells.json). Add a record with
-its symbol, costs, timings, gesture metadata, asset key, and visual kind. Add a
-recognizer to the registry in [`game/spellRecognition.ts`](game/spellRecognition.ts)
-only when the gesture is a new shape; existing recognizers can be reused. Add a
-visual renderer in `ArenaScene` only for a genuinely new effect style. The arena
-tries every registered recognizer after each completed drawing, so the matching
-symbol chooses the spell rather than the currently selected card.
+its symbol, costs, timings, gesture metadata, asset key, and visual kind.
+Spell-specific recognizers live in [`game/recognition`](game/recognition), with
+shared geometry helpers in `shared.ts`; register a new recognizer in
+[`game/spellRecognition.ts`](game/spellRecognition.ts) only when the gesture is
+a new shape. Add a visual renderer in `ArenaScene` only for a genuinely new
+effect style. The arena tries every registered recognizer after each completed
+drawing, so the matching symbol chooses the spell rather than the currently
+selected card.
 
 ## Requirements
 
