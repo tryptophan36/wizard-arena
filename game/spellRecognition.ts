@@ -1,5 +1,5 @@
 import { SPELLS, type SpellData } from "@/game/spellData";
-import { recognizeAegisStrokes, recognizeEmberLanceStrokes, recognizeLightningStrokes } from "@/game/recognition";
+import { recognizeAegisStrokes, recognizeEmberLanceStrokes, recognizeFreezeStrokes, recognizeLightningStrokes } from "@/game/recognition";
 import type { RuneRecognition, RuneStroke } from "@/game/runeGesture";
 
 type SpellRecognizer = (strokes: RuneStroke[], arenaDimension: number) => RuneRecognition;
@@ -8,6 +8,7 @@ const RECOGNIZERS: Record<SpellData["gesture"]["recognizer"] | "square-cross", S
   "ember-lance": recognizeEmberLanceStrokes,
   lightning: recognizeLightningStrokes,
   aegis: recognizeAegisStrokes,
+  freeze: recognizeFreezeStrokes,
   // Accept the former data key while old spell records are still in circulation.
   "square-cross": recognizeAegisStrokes,
 };

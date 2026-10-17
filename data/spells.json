@@ -56,7 +56,7 @@
   {
     "id": "aegis",
     "name": "AEGIS",
-    "symbol": "⊠",
+    "symbol": "□",
     "school": "WARDEN VAULT",
     "description": "A reactive shield that catches the next spell.",
     "effect": "Raise a luminous ward around the defender. If timed during a projectile flight, it absorbs the next impact completely.",
@@ -76,6 +76,34 @@
       "hint": "TRACE ONE CLOSED SQUARE",
       "steps": [
         { "number": "01", "title": "Trace the ward", "description": "Draw one clean square and close the final edge where you began.", "gesture": "START  □  CLOSE" }
+      ]
+    }
+  },
+  {
+    "id": "freeze",
+    "name": "FREEZE",
+    "symbol": "◎",
+    "school": "FROST CITADEL",
+    "description": "A binding ring of glacial stillness.",
+    "effect": "Control. Three concentric ice circles lock around the target and freeze it for 2.5 seconds (2500ms); Aegis reduces the freeze to 1 second.",
+    "manaCost": 60,
+    "cooldown": 3.6,
+    "damage": 0,
+    "freezeDurationMs": 2500,
+    "difficulty": "MASTER",
+    "timings": { "charging": 520, "flying": 980, "impact": 680 },
+    "tags": ["CONTROL", "ICE", "SINGLE TARGET"],
+    "assetKey": "freeze",
+    "visualKind": "freeze",
+    "kind": "offensive",
+    "gesture": {
+      "type": "three-stroke",
+      "recognizer": "freeze",
+      "hint": "STROKE 1: OUTER CIRCLE · STROKE 2: MIDDLE CIRCLE · STROKE 3: INNER CIRCLE",
+      "steps": [
+        { "number": "01", "title": "Trace the outer frost ring", "description": "Draw one clean, closed circle to establish the edge of the freeze. Keep the ring broad and centered.", "gesture": "OUTER  ◯  CLOSE" },
+        { "number": "02", "title": "Echo the middle ring", "description": "Lift near the first ring, then draw a second closed circle around the same center.", "gesture": "MIDDLE  ◯  CLOSE" },
+        { "number": "03", "title": "Seal the inner circle", "description": "Finish with the smallest closed circle. Keep all three rings concentric to lock the target in place.", "gesture": "INNER  ◯  CLOSE" }
       ]
     }
   }

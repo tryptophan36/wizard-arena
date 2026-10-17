@@ -23,7 +23,8 @@ export type RuneFailureReason =
   | "diagonal-hook"
   | "stroke-position"
   | "stroke-order"
-  | "pause-too-long";
+  | "pause-too-long"
+  | "circle-shape";
 
 export type RuneRecognitionStage =
   | "empty"

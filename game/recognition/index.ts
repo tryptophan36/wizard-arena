@@ -18,6 +18,13 @@ export {
   recognizeLightningStrokes,
 } from "@/game/recognition/lightning";
 export {
+  FREEZE_RUNE_HINT,
+  recognizeFreeze,
+  recognizeFreezeMultiStroke,
+  recognizeFreezeRune,
+  recognizeFreezeStrokes,
+} from "@/game/recognition/freeze";
+export {
   EMBER_LANCE_RUNE_HINT,
   runePathLength,
   runeStrokePathLength,

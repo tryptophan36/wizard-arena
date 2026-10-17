@@ -2,7 +2,7 @@
 
 Wizard Arena is a Next.js browser-game project where players cast spells as
 wizards and defeat intelligent computer opponents. The current game flow has
-a home menu, a computer duel, a spell book, three drawable spells, and a
+a home menu, a computer duel, a spell book, four drawable spells, and a
 victory/defeat loop.
 
 ## Game flow
@@ -12,10 +12,11 @@ victory/defeat loop.
 - `/spells` — learn every currently available rune before entering the arena.
 
 The computer opponent evaluates its mana, cooldown, health, projectile state,
-and the player's shield before choosing between Ember Lance, Lightning, and
-Aegis. A successful Lightning hit deals 20 damage and stuns the computer for
-1.8 seconds, interrupting any active cast. It uses deterministic timing and
-local simulation; there is no network or multiplayer implementation yet.
+and the player's shield before choosing between Ember Lance, Lightning, Freeze,
+and Aegis. A successful Lightning hit deals 20 damage and stuns the computer
+for 1.8 seconds, interrupting any active cast. Freeze binds the target for 2.5
+seconds. It uses deterministic timing and local simulation; there is no network
+or multiplayer implementation yet.
 
 ## First playable slice
 
@@ -25,6 +26,9 @@ local simulation; there is no network or multiplayer implementation yet.
   costs 35 mana, deals 20 damage, and briefly stuns the computer on hit.
 - Draw Aegis as one closed square while a projectile is travelling to raise a
   ward and absorb that impact; do not add the former crossing diagonals.
+- Draw Freeze as three nearby, concentric closed circles, one circle per stroke;
+  it costs 60 mana, deals no damage, and freezes the target for 2.5 seconds.
+  An active Aegis ward consumes itself and reduces that freeze to 1 second.
 - Select `LEARN IN ARENA` on a spell card to equip it with the matching symbol
   and gesture; opening `/` keeps Ember Lance equipped by default.
 - Open `/spells` or choose `SPELLBOOK` in the arena header to study the rune

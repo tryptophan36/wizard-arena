@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320" fill="none">
+  <title>Freeze Rings</title>
+  <desc>Three glowing concentric ice circles with crystalline frost sparks.</desc>
+  <defs>
+    <radialGradient id="freeze-aura" cx="0" cy="0" r="1" gradientTransform="translate(160 160) rotate(90) scale(142)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DDFBFF" stop-opacity="0.25" />
+      <stop offset="0.45" stop-color="#75E8FF" stop-opacity="0.14" />
+      <stop offset="1" stop-color="#6682FF" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="freeze-ring" x1="65" y1="242" x2="258" y2="73" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6C89FF" />
+      <stop offset="0.34" stop-color="#7FEAFF" />
+      <stop offset="0.66" stop-color="#E9FFFF" />
+      <stop offset="1" stop-color="#7796FF" />
+    </linearGradient>
+    <linearGradient id="freeze-core" x1="114" y1="217" x2="215" y2="103" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7E9BFF" />
+      <stop offset="0.5" stop-color="#F4FFFF" />
+      <stop offset="1" stop-color="#8DEBFF" />
+    </linearGradient>
+    <filter id="freeze-soft-glow" x="-45%" y="-45%" width="190%" height="190%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="14" />
+    </filter>
+    <filter id="freeze-tight-glow" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="4" />
+    </filter>
+  </defs>
+
+  <g id="freeze-glow" aria-hidden="true">
+    <circle cx="160" cy="160" r="136" fill="url(#freeze-aura)" />
+    <circle cx="160" cy="160" r="118" stroke="#73E9FF" stroke-width="18" opacity="0.32" filter="url(#freeze-soft-glow)" />
+    <circle cx="160" cy="160" r="82" stroke="#B7F7FF" stroke-width="12" opacity="0.28" filter="url(#freeze-tight-glow)" />
+  </g>
+
+  <g id="freeze-outer-ring" stroke="url(#freeze-ring)" stroke-linecap="round">
+    <circle cx="160" cy="160" r="116" stroke-width="5" opacity="0.9" />
+    <circle cx="160" cy="160" r="116" stroke="#F0FFFF" stroke-width="1.5" stroke-dasharray="3 13" opacity="0.92" />
+  </g>
+  <g id="freeze-middle-ring" stroke="url(#freeze-ring)" stroke-linecap="round">
+    <circle cx="160" cy="160" r="79" stroke-width="5" opacity="0.96" />
+    <circle cx="160" cy="160" r="79" stroke="#E6FFFF" stroke-width="1.5" stroke-dasharray="2 10" opacity="0.88" />
+  </g>
+  <g id="freeze-inner-ring" stroke="url(#freeze-ring)" stroke-linecap="round">
+    <circle cx="160" cy="160" r="43" stroke-width="5" opacity="1" />
+    <circle cx="160" cy="160" r="43" stroke="#FFFFFF" stroke-width="1.5" stroke-dasharray="2 8" opacity="0.9" />
+  </g>
+
+  <g id="freeze-core">
+    <circle cx="160" cy="160" r="17" fill="#DDFBFF" fill-opacity="0.25" stroke="url(#freeze-core)" stroke-width="2" />
+    <path d="M160 140V180M140 160H180M146 146L174 174M174 146L146 174" stroke="#F4FFFF" stroke-width="2" stroke-linecap="round" opacity="0.9" />
+    <circle cx="160" cy="160" r="5" fill="#FFFFFF" />
+  </g>
+
+  <g id="freeze-shards" fill="#D9FBFF" stroke="#8AEAFF" stroke-linejoin="round">
+    <path d="M160 22L165 39L182 44L165 49L160 66L155 49L138 44L155 39L160 22Z" opacity="0.9" />
+    <path d="M271 92L275 104L287 108L275 112L271 124L267 112L255 108L267 104L271 92Z" opacity="0.78" />
+    <path d="M49 193L53 205L65 209L53 213L49 225L45 213L33 209L45 205L49 193Z" opacity="0.72" />
+    <path d="M238 242L242 253L253 257L242 261L238 272L234 261L223 257L234 253L238 242Z" opacity="0.82" />
+    <circle cx="93" cy="75" r="3" fill="#FFFFFF" />
+    <circle cx="266" cy="191" r="2.5" fill="#FFFFFF" />
+    <circle cx="83" cy="257" r="2" fill="#A4F2FF" />
+  </g>
+</svg>

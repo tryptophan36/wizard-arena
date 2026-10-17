@@ -197,6 +197,13 @@ button { font: inherit; }
 .spell-card-symbol { display: grid; flex: 0 0 auto; place-items: center; width: 58px; height: 68px; border: 1px solid rgba(244,191,104,.62); color: var(--gold); font-size: 32px; text-shadow: 0 0 18px rgba(244,191,104,.6); }
 .spell-card-lightning .spell-card-symbol { border-color: rgba(143,234,255,.72); color: var(--electric); text-shadow: 0 0 18px rgba(143,234,255,.8); }
 .spell-card-aegis .spell-card-symbol { border-color: rgba(143,234,255,.72); color: var(--electric); text-shadow: 0 0 18px rgba(143,234,255,.8); }
+.spell-card-freeze .spell-card-symbol { border-color: rgba(143,234,255,.72); color: var(--electric); text-shadow: 0 0 18px rgba(143,234,255,.8); }
+.freeze-symbol { position: relative; display: block; width: 31px; height: 31px; }
+.freeze-symbol i { position: absolute; top: 50%; left: 50%; display: block; aspect-ratio: 1; border: 2px solid currentColor; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 9px currentColor; }
+.freeze-symbol i:nth-child(1) { width: 31px; opacity: .62; }
+.freeze-symbol i:nth-child(2) { width: 21px; opacity: .82; }
+.freeze-symbol i:nth-child(3) { width: 11px; opacity: 1; }
+.spell-icon-freeze { color: var(--electric); border-color: rgba(143,234,255,.72); background: radial-gradient(circle, rgba(115,135,255,.3), rgba(22,28,67,.3) 68%); }
 .spell-card-heading h3 { margin: 5px 0 5px; color: var(--cream); font-size: 21px; letter-spacing: .12em; }
 .spell-card-heading p:not(.eyebrow) { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
 .spell-card-stats { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 20px; border-top: 1px solid rgba(133,149,203,.18); border-bottom: 1px solid rgba(133,149,203,.18); }
@@ -206,23 +213,28 @@ button { font: inherit; }
 .spell-card-stats strong { display: block; margin-top: 6px; color: var(--gold); font-size: 19px; font-weight: 500; }
 .spell-card-stats small { color: var(--muted); font-size: 7px; letter-spacing: .08em; }
 .spell-card-lightning .spell-card-stats strong { color: var(--electric); }
+.spell-card-freeze .spell-card-stats strong { color: var(--electric); }
 .spell-card-rune { display: flex; align-items: center; gap: 15px; min-height: 96px; margin: 0 20px; padding: 15px 0; }
 .mini-rune { position: relative; flex: 0 0 84px; height: 68px; }
 .mini-rune-line, .mini-rune-turn, .mini-rune-strike { position: absolute; display: block; height: 3px; border-radius: 3px; background: linear-gradient(90deg, #ffe4a3, #ff684f); box-shadow: 0 0 8px rgba(255,120,78,.65); transform-origin: left center; }
 .mini-rune-line { top: 5px; left: 38px; width: 52px; transform: rotate(90deg); }
 .mini-rune-turn { top: 57px; left: 38px; width: 35px; transform: rotate(-42deg); }
 .spell-card-lightning .mini-rune-line, .spell-card-lightning .mini-rune-turn, .spell-card-lightning .mini-rune-strike { background: linear-gradient(90deg, #ffffff, var(--electric), var(--electric-blue)); box-shadow: 0 0 9px rgba(143,234,255,.75); }
+.spell-card-freeze .mini-rune-freeze i { border-color: var(--electric); box-shadow: 0 0 10px rgba(143,234,255,.85), inset 0 0 8px rgba(115,135,255,.28); }
 .spell-card-lightning .mini-rune-line { top: 2px; left: 18px; width: 34px; transform: rotate(48deg); }
 .spell-card-lightning .mini-rune-turn { top: 28px; left: 41px; width: 38px; transform: rotate(136deg); }
 .mini-rune-strike { top: 54px; left: 15px; width: 36px; transform: rotate(43deg); }
 .mini-rune-square { position: absolute; top: 9px; left: 17px; display: block; width: 50px; height: 50px; border: 3px solid var(--electric); box-shadow: 0 0 12px rgba(143,234,255,.68), inset 0 0 10px rgba(115,135,255,.32); }
-.mini-rune-square::before, .mini-rune-square::after { position: absolute; top: 22px; left: 2px; width: 40px; height: 2px; background: var(--electric); box-shadow: 0 0 7px rgba(143,234,255,.8); content: ""; }
-.mini-rune-square::before { transform: rotate(45deg); }
-.mini-rune-square::after { transform: rotate(-45deg); }
+.mini-rune-freeze { position: absolute; top: 2px; left: 8px; display: block; width: 64px; height: 64px; }
+.mini-rune-freeze i { position: absolute; top: 50%; left: 50%; display: block; aspect-ratio: 1; border: 3px solid var(--electric); border-radius: 50%; transform: translate(-50%, -50%); }
+.mini-rune-freeze i:nth-child(1) { width: 62px; opacity: .55; }
+.mini-rune-freeze i:nth-child(2) { width: 43px; opacity: .76; }
+.mini-rune-freeze i:nth-child(3) { width: 24px; opacity: 1; }
 .spell-card-rune strong { display: block; margin-top: 7px; color: var(--cream); font-size: 10px; letter-spacing: .12em; }
 .spell-card-rune p { max-width: 260px; margin: 6px 0 0; color: var(--muted); font-size: 9px; line-height: 1.45; }
 .spell-card-effect { margin: 0 20px; padding: 13px; border-left: 2px solid var(--orange); background: rgba(255,120,78,.08); }
 .spell-card-lightning .spell-card-effect { border-color: var(--electric); background: rgba(83,137,255,.1); }
+.spell-card-freeze .spell-card-effect { border-color: var(--electric); background: rgba(83,137,255,.1); }
 .spell-card-effect p { margin: 7px 0 0; color: #d4d5e4; font-size: 10px; line-height: 1.5; }
 .spell-card-steps { display: grid; gap: 0; margin: 16px 20px 0; padding: 0; list-style: none; border-top: 1px solid rgba(133,149,203,.18); }
 .spell-card-steps li { display: grid; grid-template-columns: 25px 1fr auto; gap: 9px; align-items: start; padding: 12px 0; border-bottom: 1px solid rgba(133,149,203,.14); }

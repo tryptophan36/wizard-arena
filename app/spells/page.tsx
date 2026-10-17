@@ -23,7 +23,7 @@ export default function SpellsPage() {
         <div>
           <p className="eyebrow">SPELLBOOK <span className="eyebrow-divider">/</span> RUNE ARCHIVE</p>
           <h2 id="page-title">CHOOSE YOUR <em>WEAVE</em></h2>
-          <p className="spellbook-lede">Study each spell&apos;s symbol and gesture before taking it into the circuit. Ember Lance remains the initiate pattern; Lightning attacks and Aegis answers with a reactive ward.</p>
+          <p className="spellbook-lede">Study each spell&apos;s symbol and gesture before taking it into the circuit. Ember Lance remains the initiate pattern; Lightning attacks, Aegis answers with a reactive ward, and Freeze binds the target in glacial rings.</p>
         </div>
         <div className="difficulty-card" aria-label={`${SPELLS.length} spells archived`}>
           <span className="detail-label">ARCHIVED SPELLS</span>
@@ -40,7 +40,7 @@ export default function SpellsPage() {
               <span className="rune-state"><span className="status-dot" /> {spell.difficulty}</span>
             </div>
             <div className="spell-card-heading">
-              <div className="spell-card-symbol" aria-hidden="true">{spell.symbol}</div>
+              <div className={`spell-card-symbol ${spell.id === "freeze" ? "spell-card-symbol-freeze" : ""}`} aria-hidden="true">{spell.id === "freeze" ? <span className="freeze-symbol"><i /><i /><i /></span> : spell.symbol}</div>
               <div>
                 <p className="eyebrow">{spell.school}</p>
                 <h3>{spell.name}</h3>
@@ -54,7 +54,7 @@ export default function SpellsPage() {
             </div>
             <div className="spell-card-rune">
               <div className="mini-rune" aria-hidden="true">
-                {spell.id === "aegis" ? <span className="mini-rune-square" /> : <><span className="mini-rune-line" /><span className="mini-rune-turn" />{spell.id === "lightning" && <span className="mini-rune-strike" />}</>}
+                {spell.id === "aegis" ? <span className="mini-rune-square" /> : spell.id === "freeze" ? <span className="mini-rune-freeze"><i /><i /><i /></span> : <><span className="mini-rune-line" /><span className="mini-rune-turn" />{spell.id === "lightning" && <span className="mini-rune-strike" />}</>}
               </div>
               <div>
                 <span className="detail-label">GESTURE</span>
@@ -75,7 +75,7 @@ export default function SpellsPage() {
       </section>
 
       <footer className="spellbook-footer">
-        <div><p className="eyebrow">ARCHIVE STATUS</p><p className="footer-prompt">Three patterns ready for the circuit.</p></div>
+        <div><p className="eyebrow">ARCHIVE STATUS</p><p className="footer-prompt">Four patterns ready for the circuit.</p></div>
         <Link className="arena-cta" href="/arena">RETURN TO ARENA <span aria-hidden="true">↗</span></Link>
       </footer>
     </main>

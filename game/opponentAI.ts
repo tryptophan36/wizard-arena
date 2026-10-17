@@ -40,6 +40,7 @@ export function decideOpponentAction(state: OpponentAIState, spell: SpellData): 
   const emberLance = availableSpells.find((candidate) => candidate.id === "ember-lance") ?? spell;
   const lightning = availableSpells.find((candidate) => candidate.id === "lightning");
   const aegis = availableSpells.find((candidate) => candidate.id === "aegis");
+  const freeze = availableSpells.find((candidate) => (candidate.id as string) === "freeze");
 
   // The Warden rotates through its kit based on the tactical state rather than
   // firing the same projectile on a fixed timer. Aegis answers a healthy player
@@ -51,15 +52,17 @@ export function decideOpponentAction(state: OpponentAIState, spell: SpellData): 
     return { action: "cast", reason: "execute", spellId: lightning.id };
   }
 
-  // Ember Lance is intentionally held for a readable turn: fire when the player
-  // is vulnerable, or when the Warden has enough mana to commit to pressure.
+  // Freeze is safe to use here because the duel cancels the player's active cast
+  // and blocks new rune input for the spell's duration.
   if (state.playerShieldActive && state.playerHealth > OPPONENT_AI_CONFIG.pressureHealth) {
     return { action: "wait", reason: "pressure" };
   }
   if (state.playerHealth <= OPPONENT_AI_CONFIG.pressureHealth || state.opponentHealth <= 35 || state.mana >= 75) {
     const chosenSpell = lightning && state.mana >= lightning.manaCost && (state.playerHealth <= 62 || state.opponentHealth <= 35)
       ? lightning
-      : emberLance;
+      : freeze && state.mana >= freeze.manaCost
+        ? freeze
+        : emberLance;
     if (state.mana < chosenSpell.manaCost) return { action: "wait", reason: "recharging" };
     return { action: "cast", reason: state.playerHealth <= OPPONENT_AI_CONFIG.pressureHealth ? "execute" : "pressure", spellId: chosenSpell.id };
   }

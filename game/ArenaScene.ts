@@ -3,6 +3,7 @@ import { type RunePoint, type RuneStroke } from "@/game/runeGesture";
 import { EMBER_LANCE_ASSET } from "@/game/emberLanceAsset";
 import { LIGHTNING_BOLT_ASSET } from "@/game/lightningBoltAsset";
 import { SHIELD_ASSET } from "@/game/shieldAsset";
+import { FREEZE_ASSET } from "@/game/freezeAsset";
 import { getSpell, SPELLS, type SpellData, type SpellId } from "@/game/spellData";
 import { recognizeAnySpell } from "@/game/spellRecognition";
 import { decideOpponentAction, OPPONENT_AI_CONFIG, type OpponentPhase } from "@/game/opponentAI";
@@ -16,7 +17,7 @@ export type GestureFeedback = {
 };
 
 export type ArenaGameState = "playing" | "victory" | "defeat";
-export type EnemyActivity = "waiting" | "charging" | "flying" | "impact" | "stunned";
+export type EnemyActivity = "waiting" | "charging" | "flying" | "impact" | "stunned" | "frozen";
 
 export type ArenaCallbacks = {
   onManaChange: (mana: number) => void;
@@ -32,7 +33,19 @@ export type ArenaCallbacks = {
 
 const MAX_MANA = 100;
 const MAX_HEALTH = 100;
+const DEFAULT_FREEZE_DURATION_MS = 2500;
+const SHIELDED_FREEZE_DURATION_MS = 1000;
 type Point = { x: number; y: number };
+
+function isFreezeSpell(spell: SpellData) {
+  return (spell.visualKind as string) === "freeze";
+}
+
+function getFreezeDuration(spell: SpellData) {
+  const duration = (spell as SpellData & { freezeDurationMs?: unknown }).freezeDurationMs;
+  return typeof duration === "number" && Number.isFinite(duration) && duration > 0 ? duration : DEFAULT_FREEZE_DURATION_MS;
+}
+
 export class ArenaScene extends Phaser.Scene {
   private callbacks: ArenaCallbacks;
   private spell: SpellData;
@@ -55,6 +68,8 @@ export class ArenaScene extends Phaser.Scene {
   private emberLance!: Phaser.GameObjects.Image;
   private enemyEmberLance!: Phaser.GameObjects.Image;
   private lightningBolt!: Phaser.GameObjects.Image;
+  private freezeRings!: Phaser.GameObjects.Image;
+  private enemyFreezeRings!: Phaser.GameObjects.Image;
   private shield!: Phaser.GameObjects.Image;
   private enemyShield!: Phaser.GameObjects.Image;
   private gestureStrokes: RuneStroke[] = [];
@@ -68,6 +83,8 @@ export class ArenaScene extends Phaser.Scene {
   private enemyMana = MAX_MANA;
   private enemyProjectileSpell: SpellData | null = null;
   private enemyStunnedUntil = 0;
+  private enemyFrozenUntil = 0;
+  private playerFrozenUntil = 0;
   private nextEnemyDecisionAt: number = OPPONENT_AI_CONFIG.openingDelayMs;
   private enemyActivity: EnemyActivity = "waiting";
 
@@ -94,6 +111,10 @@ export class ArenaScene extends Phaser.Scene {
       width: SHIELD_ASSET.width,
       height: SHIELD_ASSET.height,
     });
+    this.load.svg(FREEZE_ASSET.key, FREEZE_ASSET.url, {
+      width: FREEZE_ASSET.width,
+      height: FREEZE_ASSET.height,
+    });
   }
 
   create() {
@@ -110,6 +131,16 @@ export class ArenaScene extends Phaser.Scene {
       .setDepth(3);
     this.lightningBolt = this.add.image(0, 0, LIGHTNING_BOLT_ASSET.key)
       .setOrigin(LIGHTNING_BOLT_ASSET.origin.x, LIGHTNING_BOLT_ASSET.origin.y)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false)
+      .setDepth(3);
+    this.freezeRings = this.add.image(0, 0, FREEZE_ASSET.key)
+      .setOrigin(FREEZE_ASSET.origin.x, FREEZE_ASSET.origin.y)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false)
+      .setDepth(3);
+    this.enemyFreezeRings = this.add.image(0, 0, FREEZE_ASSET.key)
+      .setOrigin(FREEZE_ASSET.origin.x, FREEZE_ASSET.origin.y)
       .setBlendMode(Phaser.BlendModes.ADD)
       .setVisible(false)
       .setDepth(3);
@@ -153,6 +184,15 @@ export class ArenaScene extends Phaser.Scene {
       this.enemyShieldActive = false;
       if (this.enemyActivity === "charging") this.setEnemyActivity("waiting");
     }
+    if (this.playerFrozenUntil > 0 && time >= this.playerFrozenUntil) {
+      this.playerFrozenUntil = 0;
+      if (!this.gestureActive) {
+        this.gestureFeedbackUntil = 0;
+        this.gestureStrokes = [];
+        this.activeStroke = [];
+        this.setGestureFeedback(this.getInitialGesture());
+      }
+    }
     if (!this.gestureActive && this.gestureFeedbackUntil > 0 && time >= this.gestureFeedbackUntil) {
       this.gestureFeedbackUntil = 0;
       this.gestureStrokes = [];
@@ -174,9 +214,11 @@ export class ArenaScene extends Phaser.Scene {
         if (this.enemyShieldActive) {
           this.enemyShieldActive = false;
           this.enemyShieldBlockedUntil = time + 440;
+          if (isFreezeSpell(activeSpell)) this.freezeOpponent(time, SHIELDED_FREEZE_DURATION_MS);
         } else {
           this.targetHealth = Math.max(0, this.targetHealth - activeSpell.damage);
           if (activeSpell.stunDurationMs) this.stunOpponent(time, activeSpell.stunDurationMs);
+          if (isFreezeSpell(activeSpell)) this.freezeOpponent(time, getFreezeDuration(activeSpell));
         }
       }
       this.callbacks.onTargetHealthChange(this.targetHealth); this.callbacks.onPhaseChange("impact");
@@ -189,6 +231,14 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private updateOpponent(time: number) {
+    if (time < this.enemyFrozenUntil) {
+      this.enemyPhase = "ready";
+      this.enemyPhaseStarted = time;
+      this.enemyProjectileSpell = null;
+      if (this.enemyActivity !== "frozen") this.setEnemyActivity("frozen");
+      return;
+    }
+    if (this.enemyActivity === "frozen") this.setEnemyActivity(time < this.enemyStunnedUntil ? "stunned" : "waiting");
     if (time < this.enemyStunnedUntil) {
       this.enemyPhase = "ready";
       this.enemyPhaseStarted = time;
@@ -220,9 +270,11 @@ export class ArenaScene extends Phaser.Scene {
       if (this.shieldActive) {
         this.shieldActive = false;
         this.shieldBlockedUntil = time + 440;
+        if (isFreezeSpell(enemySpell)) this.freezePlayer(time, SHIELDED_FREEZE_DURATION_MS);
       } else {
         this.playerHealth = Math.max(0, this.playerHealth - enemySpell.damage);
         this.callbacks.onPlayerHealthChange(this.playerHealth);
+        if (isFreezeSpell(enemySpell)) this.freezePlayer(time, getFreezeDuration(enemySpell));
       }
       if (this.playerHealth <= 0) this.finishGame("defeat");
     } else if (this.enemyPhase === "impact" && enemySpell && time - this.enemyPhaseStarted >= enemySpell.timings.impact) {
@@ -259,6 +311,32 @@ export class ArenaScene extends Phaser.Scene {
     this.setEnemyActivity("stunned");
   }
 
+  private freezeOpponent(now: number, durationMs: number) {
+    if (!Number.isFinite(durationMs) || durationMs <= 0) return;
+    this.enemyFrozenUntil = Math.max(this.enemyFrozenUntil, now + durationMs);
+    this.enemyPhase = "ready";
+    this.enemyPhaseStarted = now;
+    this.enemyProjectileSpell = null;
+    this.nextEnemyDecisionAt = Math.max(this.nextEnemyDecisionAt, this.enemyFrozenUntil);
+    this.setEnemyActivity("frozen");
+  }
+
+  private freezePlayer(now: number, durationMs: number) {
+    if (!Number.isFinite(durationMs) || durationMs <= 0) return;
+    this.playerFrozenUntil = Math.max(this.playerFrozenUntil, now + durationMs);
+    if (this.phase !== "ready") {
+      this.phase = "ready";
+      this.phaseStarted = now;
+      this.projectileSpell = null;
+      this.callbacks.onPhaseChange("ready");
+    }
+    this.gestureActive = false;
+    this.gestureStrokes = [];
+    this.activeStroke = [];
+    this.gestureFeedbackUntil = this.playerFrozenUntil;
+    this.setGestureFeedback({ status: "failed", message: "FROZEN", hint: "RUNE INPUT SEALED" });
+  }
+
   private setEnemyActivity(activity: EnemyActivity) {
     this.enemyActivity = activity;
     this.callbacks.onEnemyActivityChange(activity);
@@ -271,9 +349,9 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private handlePointerDown(pointer: Phaser.Input.Pointer) {
-    if (this.gameState !== "playing" || pointer.wasTouch || pointer.button !== 0 || this.gestureActive || (this.phase !== "ready" && this.phase !== "flying")) return;
-    this.gestureActive = true;
     const now = this.game.loop?.time ?? 0;
+    if (this.gameState !== "playing" || pointer.wasTouch || pointer.button !== 0 || now < this.playerFrozenUntil || this.gestureActive || (this.phase !== "ready" && this.phase !== "flying")) return;
+    this.gestureActive = true;
     this.activeStroke = [{ x: pointer.worldX, y: pointer.worldY, timestamp: now }];
     this.gestureFeedbackUntil = 0;
     const strokeNumber = this.gestureStrokes.length + 1;
@@ -289,8 +367,14 @@ export class ArenaScene extends Phaser.Scene {
 
   private handlePointerUp(pointer: Phaser.Input.Pointer) {
     if (!this.gestureActive || pointer.wasTouch) return;
-    this.gestureActive = false;
     const now = this.game.loop?.time ?? 0;
+    if (now < this.playerFrozenUntil) {
+      this.gestureActive = false;
+      this.gestureStrokes = [];
+      this.activeStroke = [];
+      return;
+    }
+    this.gestureActive = false;
     const finalPoint = { x: pointer.worldX, y: pointer.worldY, timestamp: now };
     const previous = this.activeStroke[this.activeStroke.length - 1];
     if (!previous || Phaser.Math.Distance.Between(previous.x, previous.y, finalPoint.x, finalPoint.y) >= 2) this.activeStroke.push(finalPoint);
@@ -329,6 +413,7 @@ export class ArenaScene extends Phaser.Scene {
 
   private castSpell() {
     const now = this.game.loop?.time ?? 0;
+    if (now < this.playerFrozenUntil) return false;
     const isShield = this.spell.kind === "defensive";
     const canCastShield = isShield && (this.phase === "ready" || this.phase === "flying");
     if ((!isShield && this.phase !== "ready") || (isShield && !canCastShield) || now < this.cooldownUntil || this.mana < this.spell.manaCost) return false;
@@ -354,7 +439,7 @@ export class ArenaScene extends Phaser.Scene {
     const hitT = this.phase === "impact" ? Phaser.Math.Clamp((time - this.phaseStarted) / activeSpell.timings.impact, 0, 1) : 0;
     const target: Point = { x: targetBase.x + (this.phase === "impact" ? Math.sin(hitT * Math.PI * 8) * (1 - hitT) * 10 : 0), y: targetBase.y };
     this.art.clear(); this.drawBackdrop(width, height, t); this.drawArenaFloor(width, height, t);
-       this.drawWizard(wizard, t); this.drawTarget(target, t, hitT); this.drawSpell(wizard, target, time, t); this.drawEnemySpell(wizard, target, time, t); this.drawShield(wizard, time, t); this.drawEnemyShield(target, time, t); this.drawGesture(time);
+       this.drawWizard(wizard, t); this.drawTarget(target, t, hitT); this.drawSpell(wizard, target, time, t); this.drawEnemySpell(wizard, target, time, t); this.drawShield(wizard, time, t); this.drawEnemyShield(target, time, t); this.drawFreezeStatus(wizard, target, time, t); this.drawGesture(time);
   }
 
   private drawGesture(time: number) {
@@ -417,17 +502,22 @@ export class ArenaScene extends Phaser.Scene {
   private drawTarget(p: Point, t: number, hitT: number) {
     const g = this.art; const x = p.x; const y = p.y; const flash = this.phase === "impact" ? 0.55 * (1 - hitT) : 0; const activeSpell = this.projectileSpell ?? this.spell;
     g.fillStyle(0x050819, 0.6); g.fillEllipse(x, y + 48, 150, 30); g.fillStyle(0x3e4669, 1); g.beginPath(); g.moveTo(x - 48, y + 37); g.lineTo(x - 43, y - 23); g.lineTo(x - 25, y - 48); g.lineTo(x + 26, y - 48); g.lineTo(x + 47, y - 18); g.lineTo(x + 41, y + 39); g.closePath(); g.fillPath(); g.fillStyle(0x596487, 1); g.fillTriangle(x - 39, y - 19, x - 20, y - 47, x - 8, y - 18); g.fillTriangle(x + 4, y - 45, x + 26, y - 42, x + 39, y - 16); g.fillStyle(0x273052, 1); g.fillCircle(x - 20, y - 9, 6); g.fillCircle(x + 20, y - 9, 6); g.fillStyle(0xffa94d, 1); g.fillCircle(x - 20, y - 9, 3); g.fillCircle(x + 20, y - 9, 3); g.fillStyle(0xd86f4e, 0.9); g.fillCircle(x, y + 12, 13); g.fillStyle(0xffca63, 0.85); g.fillCircle(x, y + 12, 7 + Math.sin(t * 5) * 1.5); g.fillStyle(0x1c2446, 1); g.fillRect(x - 48, y + 30, 96, 9); g.fillStyle(0x63e3c9, 1); g.fillRect(x - 44, y + 32, 88 * (this.targetHealth / MAX_HEALTH), 5);
-     if (flash > 0) { g.fillStyle(activeSpell.visualKind === "lightning" ? 0xd9faff : 0xfff4cf, flash); g.fillCircle(x, y, 62 * flash + 18); }
+    if (flash > 0) { g.fillStyle(activeSpell.visualKind === "lightning" ? 0xd9faff : isFreezeSpell(activeSpell) ? 0xb7f7ff : 0xfff4cf, flash); g.fillCircle(x, y, 62 * flash + 18); }
   }
 
   private drawSpell(wizard: Point, target: Point, time: number, t: number) {
     const activeSpell = this.projectileSpell ?? this.spell;
+    this.freezeRings.setVisible(false);
     if (activeSpell.visualKind === "shield") {
       this.lightningBolt.setVisible(false); this.emberLance.setVisible(false);
       return;
     }
     if (activeSpell.visualKind === "lightning") {
       this.drawLightningSpell(wizard, target, time, t);
+      return;
+    }
+    if (isFreezeSpell(activeSpell)) {
+      this.drawFreezeSpell(wizard, target, time, t, false);
       return;
     }
     this.lightningBolt.setVisible(false);
@@ -469,6 +559,7 @@ export class ArenaScene extends Phaser.Scene {
 
   private drawEnemySpell(wizard: Point, target: Point, time: number, t: number) {
     const activeSpell = this.enemyProjectileSpell;
+    this.enemyFreezeRings.setVisible(false);
     if (!activeSpell || this.enemyPhase === "ready") {
       this.enemyEmberLance.setVisible(false);
       this.lightningBolt.setVisible(false);
@@ -476,6 +567,10 @@ export class ArenaScene extends Phaser.Scene {
     }
     if (activeSpell.visualKind === "lightning") {
       this.drawEnemyLightningSpell(wizard, target, time, t);
+      return;
+    }
+    if (isFreezeSpell(activeSpell)) {
+      this.drawFreezeSpell(wizard, target, time, t, true);
       return;
     }
     const elapsed = time - this.enemyPhaseStarted;
@@ -587,6 +682,65 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
+  private drawFreezeSpell(wizard: Point, target: Point, time: number, t: number, enemy: boolean) {
+    const activeSpell = enemy ? this.enemyProjectileSpell : this.projectileSpell ?? this.spell;
+    if (!activeSpell) return;
+    this.emberLance.setVisible(false);
+    this.enemyEmberLance.setVisible(false);
+    this.lightningBolt.setVisible(false);
+    const elapsed = time - (enemy ? this.enemyPhaseStarted : this.phaseStarted);
+    const phase = enemy ? this.enemyPhase : this.phase;
+    const origin = enemy ? { x: target.x - 32, y: target.y - 36 } : { x: wizard.x + 32, y: wizard.y - 36 };
+    const destination = enemy ? { x: wizard.x + 56, y: wizard.y - 41 } : { x: target.x - 56, y: target.y - 5 };
+    const direction = enemy ? Math.PI : 0;
+    const rings = enemy ? this.enemyFreezeRings : this.freezeRings;
+    rings.setVisible(false);
+    if (phase === "charging") {
+      const progress = Phaser.Math.Clamp(elapsed / activeSpell.timings.charging, 0, 1);
+      this.drawFrostOrb(origin, 8 + progress * 13, t, 1 - progress * 0.2);
+      rings.setPosition(origin.x, origin.y).setRotation(direction).setScale(0.12 + progress * 0.08).setAlpha(0.18 + progress * 0.5).setVisible(true);
+      this.art.lineStyle(2, 0xb7f7ff, 0.65);
+      this.art.strokeCircle(origin.x, origin.y, 28 + progress * 22);
+    } else if (phase === "flying") {
+      const progress = Phaser.Math.Clamp(elapsed / activeSpell.timings.flying, 0, 1);
+      const x = Phaser.Math.Interpolation.QuadraticBezier(progress, origin.x, (origin.x + destination.x) / 2, destination.x);
+      const y = Phaser.Math.Interpolation.QuadraticBezier(progress, origin.y, Math.min(origin.y, destination.y) - 80, destination.y);
+      for (let index = 8; index >= 1; index -= 1) {
+        const trailProgress = Math.max(0, progress - index * 0.025);
+        const trailX = Phaser.Math.Interpolation.QuadraticBezier(trailProgress, origin.x, (origin.x + destination.x) / 2, destination.x);
+        const trailY = Phaser.Math.Interpolation.QuadraticBezier(trailProgress, origin.y, Math.min(origin.y, destination.y) - 80, destination.y);
+        this.art.fillStyle(index % 2 ? 0x8deaff : 0xe3fbff, 0.1 + (9 - index) * 0.06);
+        this.art.fillCircle(trailX, trailY, 4 + (9 - index) * 0.8);
+      }
+      this.drawFrostOrb({ x, y }, 14 + Math.sin(t * 11) * 2, t, 1);
+      rings.setPosition(x, y).setRotation(direction + t * 0.35).setScale(0.18).setAlpha(0.88).setVisible(true);
+      this.art.lineStyle(2, 0xb7f7ff, 0.65);
+      this.art.lineBetween(x - Math.cos(direction) * 22, y - Math.sin(direction) * 22, x + Math.cos(direction) * 22, y + Math.sin(direction) * 22);
+    } else if (phase === "impact") {
+      const progress = Phaser.Math.Clamp(elapsed / activeSpell.timings.impact, 0, 1);
+      const radius = 20 + progress * 95;
+      rings.setPosition(destination.x, destination.y).setRotation(t * 0.25).setScale(0.22 + progress * 0.2).setAlpha(0.82 * (1 - progress)).setVisible(true);
+      this.art.lineStyle(5 * (1 - progress), 0xb7f7ff, 0.9 * (1 - progress));
+      this.art.strokeCircle(destination.x, destination.y, radius);
+      for (let index = 0; index < 8; index += 1) {
+        const angle = (Math.PI * 2 * index) / 8 + t * 0.3;
+        const distance = 28 + progress * 72;
+        this.art.lineBetween(destination.x, destination.y, destination.x + Math.cos(angle) * distance, destination.y + Math.sin(angle) * distance);
+      }
+    }
+  }
+
+  private drawFreezeStatus(wizard: Point, target: Point, time: number, t: number) {
+    if (time < this.playerFrozenUntil) {
+      const remaining = Phaser.Math.Clamp((this.playerFrozenUntil - time) / DEFAULT_FREEZE_DURATION_MS, 0, 1);
+      this.freezeRings.setPosition(wizard.x, wizard.y - 36).setRotation(t * 0.25).setScale(0.52 + Math.sin(t * 5) * 0.02).setAlpha(0.5 + remaining * 0.35).setVisible(true);
+    }
+    if (time < this.enemyFrozenUntil) {
+      const remaining = Phaser.Math.Clamp((this.enemyFrozenUntil - time) / DEFAULT_FREEZE_DURATION_MS, 0, 1);
+      this.enemyFreezeRings.setPosition(target.x, target.y - 36).setRotation(-t * 0.25).setScale(0.52 + Math.sin(t * 5 + 1) * 0.02).setAlpha(0.5 + remaining * 0.35).setVisible(true);
+    }
+  }
+
   private drawFlameRibbon(x: number, y: number, angle: number, length: number, time: number, alpha: number) {
     const ux = Math.cos(angle); const uy = Math.sin(angle); const vx = -uy; const vy = ux;
     const wave = Math.sin(time * 8) * 3;
@@ -622,6 +776,15 @@ export class ArenaScene extends Phaser.Scene {
 
   private drawElectricOrb(p: Point, radius: number, t: number, alpha: number) {
     const g = this.art; g.fillStyle(0x566dff, 0.1 * alpha); g.fillCircle(p.x, p.y, radius * 2.8); g.fillStyle(0x63d9ff, 0.26 * alpha); g.fillCircle(p.x, p.y, radius * 1.6); g.fillStyle(0x5296ff, 0.95 * alpha); g.fillCircle(p.x, p.y, radius); g.fillStyle(0xf3ffff, alpha); g.fillCircle(p.x - 3, p.y - 3, radius * 0.45); g.lineStyle(2, 0x9aeaff, 0.8 * alpha); g.strokeCircle(p.x, p.y, radius + Math.sin(t * 12) * 2);
+  }
+
+  private drawFrostOrb(p: Point, radius: number, t: number, alpha: number) {
+    const g = this.art;
+    g.fillStyle(0x75dfff, 0.1 * alpha); g.fillCircle(p.x, p.y, radius * 2.8);
+    g.fillStyle(0xb7f7ff, 0.26 * alpha); g.fillCircle(p.x, p.y, radius * 1.6);
+    g.fillStyle(0x75bfff, 0.95 * alpha); g.fillCircle(p.x, p.y, radius);
+    g.fillStyle(0xf3ffff, alpha); g.fillCircle(p.x - 3, p.y - 3, radius * 0.45);
+    g.lineStyle(2, 0xd9faff, 0.8 * alpha); g.strokeCircle(p.x, p.y, radius + Math.sin(t * 9) * 2);
   }
 
   private drawShield(wizard: Point, time: number, t: number) {
