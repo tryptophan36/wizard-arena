@@ -23,7 +23,6 @@ export type RuneFailureReason =
   | "diagonal-hook"
   | "stroke-position"
   | "stroke-order"
-  | "pause-too-long"
   | "circle-shape";
 
 export type RuneRecognitionStage =
@@ -59,7 +58,6 @@ export type RecognitionValues = Pick<RuneRecognition, "recognized" | "stage" | "
   hint?: string;
 };
 
-export const MAX_STROKE_PAUSE_MS = 900;
 export const EMBER_LANCE_RUNE_HINT = "STROKE 1: LONG DOWNWARD LINE · STROKE 2: UP-RIGHT HOOK";
 
 export function distance(a: RunePoint, b: RunePoint) {

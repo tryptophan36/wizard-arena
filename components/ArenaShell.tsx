@@ -40,7 +40,7 @@ export default function ArenaShell() {
       <header className="hud top-hud">
         <div className="brand-lockup"><div className="brand-mark">✦</div><div><p className="eyebrow">THE ARCANE CIRCUIT</p><h1>WIZARD ARENA</h1></div></div>
         <div className="round-status"><span className="status-dot" /><span>TRIAL 01</span><i /><span>{spell.school}</span><i /><span>WARDEN {enemyActivity.toUpperCase()}</span></div>
-        <div className="top-actions"><span className="mouse-hint">MOUSE</span><span>DRAW RUNE</span><Link className="spellbook-nav" href="/spells">SPELLBOOK ↗</Link></div>
+        <div className="top-actions"><span className="mouse-hint">MOUSE</span><span>DRAW RUNE · PRESS A TO MATCH</span><Link className="spellbook-nav" href="/spells">SPELLBOOK ↗</Link></div>
       </header>
       <nav className="drawing-toolbar" aria-label="Rune drawing tool">
         <span className="drawing-toolbar-label">DRAWING TOOL</span>

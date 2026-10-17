@@ -36,11 +36,10 @@ or multiplayer implementation yet.
 - Use the arena drawing toolbar to switch between Freehand, Circle, Square, and
   Line tools. Freehand is selected by default, and the selected tool stays
   active until you change it.
-- After each stroke, the rune briefly settles before matching. Use that pause to
-  switch tools or begin the next stroke of a complex rune; a completed spell is
-  only released after the pause expires.
-- Each gesture must be long enough to pass recognition before its spell launches;
-  a short or malformed rune shows a failure hint and does not spend mana.
+- Draw as many strokes as the rune needs, switching tools between strokes when
+  useful. Spells never match or execute automatically: press `A` when the full
+  rune is ready to match and release. An incomplete rune stays on the arena so
+  you can keep drawing; a malformed rune disappears after a failed match.
 - Projectile travel is deliberately slower, giving the defender time to draw
   Aegis and react. Watch the cast charge, trail, impact burst, target recoil,
   mana cost, and cooldown feedback for the selected spell.

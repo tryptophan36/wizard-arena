@@ -2,7 +2,6 @@ import {
   clampProgress,
   distance,
   makeRecognition,
-  MAX_STROKE_PAUSE_MS,
   runeStrokePathLength,
   strokeEndTime,
   strokeStartTime,
@@ -166,13 +165,13 @@ export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: nu
       const previousEndTime = strokeEndTime(previous);
       const currentStartTime = strokeStartTime(stroke);
       const pauseMs = previousEndTime !== undefined && currentStartTime !== undefined ? currentStartTime - previousEndTime : undefined;
-      if (pauseMs !== undefined && (pauseMs < 0 || pauseMs > MAX_STROKE_PAUSE_MS)) {
+      if (pauseMs !== undefined && pauseMs < 0) {
         return makeFreezeRecognition(strokes, minimumLength, minimumStrokeLengths, {
           recognized: false,
           stage: "failed",
           progress: index / 2,
-          reason: pauseMs < 0 ? "stroke-order" : "pause-too-long",
-          hint: pauseMs < 0 ? "FINISH EACH CIRCLE IN ORDER" : "KEEP THE PAUSE BETWEEN CIRCLES SHORT",
+          reason: "stroke-order",
+          hint: "FINISH EACH CIRCLE IN ORDER",
         }, pauseMs, gapDistance);
       }
       if (gapDistance > positionTolerance) {

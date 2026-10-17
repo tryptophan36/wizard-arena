@@ -2,7 +2,6 @@ import {
   clampProgress,
   distance,
   makeRecognition,
-  MAX_STROKE_PAUSE_MS,
   runePathLength,
   runeStrokePathLength,
   strokeEndTime,
@@ -17,7 +16,7 @@ import {
  *
  * Stroke one is a long, mostly vertical downward line. Stroke two must begin
  * close to stroke one's endpoint and travel up and right as a diagonal hook.
- * Timing is optional, but when supplied a pause over 900ms is rejected.
+ * Timing is optional and is only used to validate stroke ordering.
  */
 export function recognizeEmberLanceStrokes(strokes: RuneStroke[], arenaDimension: number): RuneRecognition {
   const dimension = Math.max(1, arenaDimension);
@@ -162,16 +161,6 @@ export function recognizeEmberLanceStrokes(strokes: RuneStroke[], arenaDimension
       progress: 0.5,
       reason: "stroke-order",
       hint: "FINISH THE DOWNWARD STROKE BEFORE STARTING THE HOOK",
-    }, pauseMs, gapDistance);
-  }
-
-  if (pauseMs !== undefined && pauseMs > MAX_STROKE_PAUSE_MS) {
-    return makeRecognition(strokes, minimumLength, minimumStrokeLengths, {
-      recognized: false,
-      stage: "failed",
-      progress: 0.5,
-      reason: "pause-too-long",
-      hint: "KEEP THE PAUSE BETWEEN STROKES SHORT",
     }, pauseMs, gapDistance);
   }
 

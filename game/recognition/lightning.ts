@@ -2,7 +2,6 @@ import {
   clampProgress,
   distance,
   makeRecognition,
-  MAX_STROKE_PAUSE_MS,
   runeStrokePathLength,
   strokeEndTime,
   strokeStartTime,
@@ -87,8 +86,8 @@ export function recognizeLightningStrokes(strokes: RuneStroke[], arenaDimension:
     const previousEndTime = strokeEndTime(previous);
     const currentStartTime = strokeStartTime(stroke);
     const pauseMs = previousEndTime !== undefined && currentStartTime !== undefined ? currentStartTime - previousEndTime : undefined;
-    if (pauseMs !== undefined && (pauseMs < 0 || pauseMs > MAX_STROKE_PAUSE_MS)) {
-      return makeLightningRecognition({ recognized: false, stage: "failed", progress: index / 3, reason: pauseMs < 0 ? "stroke-order" : "pause-too-long", hint: pauseMs < 0 ? "FINISH EACH BOLT SEGMENT IN ORDER" : "KEEP THE PAUSE BETWEEN BOLT SEGMENTS SHORT" }, pauseMs, gapDistance);
+    if (pauseMs !== undefined && pauseMs < 0) {
+      return makeLightningRecognition({ recognized: false, stage: "failed", progress: index / 3, reason: "stroke-order", hint: "FINISH EACH BOLT SEGMENT IN ORDER" }, pauseMs, gapDistance);
     }
     if (gapDistance > positionTolerance) {
       return makeLightningRecognition({ recognized: false, stage: "failed", progress: index / 3, reason: "stroke-position", hint: "START EACH SEGMENT NEAR THE LAST BOLT TIP" }, pauseMs, gapDistance);
