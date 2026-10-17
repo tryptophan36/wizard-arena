@@ -16,7 +16,9 @@ export type OpponentAIState = {
   playerHealth: number;
   opponentHealth: number;
   playerShieldActive: boolean;
+  playerPhase?: OpponentPhase;
   hasActiveProjectile: boolean;
+  lastSpellId?: SpellId | null;
   stunned?: boolean;
   availableSpells?: readonly SpellData[];
 };
@@ -34,37 +36,36 @@ export function decideOpponentAction(state: OpponentAIState, spell: SpellData): 
   if (state.now < OPPONENT_AI_CONFIG.openingDelayMs) return { action: "wait", reason: "opening-ritual" };
   if (state.phase !== "ready" || state.hasActiveProjectile) return { action: "wait", reason: "phase" };
   if (state.now < state.cooldownUntil) return { action: "wait", reason: "cooldown" };
-  if (state.mana < spell.manaCost) return { action: "wait", reason: "recharging" };
 
   const availableSpells = state.availableSpells ?? SPELLS;
   const emberLance = availableSpells.find((candidate) => candidate.id === "ember-lance") ?? spell;
   const lightning = availableSpells.find((candidate) => candidate.id === "lightning");
   const aegis = availableSpells.find((candidate) => candidate.id === "aegis");
   const freeze = availableSpells.find((candidate) => (candidate.id as string) === "freeze");
+  const playerIsCasting = state.playerPhase === "charging" || state.playerPhase === "flying";
+  const tacticalChoices: { spell: SpellData; reason: OpponentDecision["reason"] }[] = [];
 
-  // The Warden rotates through its kit based on the tactical state rather than
-  // firing the same projectile on a fixed timer. Aegis answers a healthy player
-  // who is already pressuring the core; Lightning is the expensive finisher.
-  if (aegis && state.opponentHealth <= 35 && state.playerHealth > OPPONENT_AI_CONFIG.pressureHealth && state.mana >= aegis.manaCost) {
-    return { action: "cast", reason: "pressure", spellId: aegis.id };
+  // Aegis answers an incoming player cast or a critically damaged Warden.
+  if (aegis && (playerIsCasting || state.opponentHealth <= 35) && state.playerHealth > OPPONENT_AI_CONFIG.pressureHealth) {
+    tacticalChoices.push({ spell: aegis, reason: "pressure" });
   }
-  if (lightning && state.playerHealth <= OPPONENT_AI_CONFIG.pressureHealth && state.mana >= lightning.manaCost) {
-    return { action: "cast", reason: "execute", spellId: lightning.id };
+  // Freeze is a control answer, not a default attack. Avoid using it into an
+  // active player ward because the ward already reduces its effect.
+  if (freeze && playerIsCasting && !state.playerShieldActive) {
+    tacticalChoices.push({ spell: freeze, reason: "pressure" });
+  }
+  if (lightning && state.playerHealth <= OPPONENT_AI_CONFIG.pressureHealth) {
+    tacticalChoices.push({ spell: lightning, reason: "execute" });
   }
 
-  // Freeze is safe to use here because the duel cancels the player's active cast
-  // and blocks new rune input for the spell's duration.
-  if (state.playerShieldActive && state.playerHealth > OPPONENT_AI_CONFIG.pressureHealth) {
-    return { action: "wait", reason: "pressure" };
-  }
-  if (state.playerHealth <= OPPONENT_AI_CONFIG.pressureHealth || state.opponentHealth <= 35 || state.mana >= 75) {
-    const chosenSpell = lightning && state.mana >= lightning.manaCost && (state.playerHealth <= 62 || state.opponentHealth <= 35)
-      ? lightning
-      : freeze && state.mana >= freeze.manaCost
-        ? freeze
-        : emberLance;
-    if (state.mana < chosenSpell.manaCost) return { action: "wait", reason: "recharging" };
-    return { action: "cast", reason: state.playerHealth <= OPPONENT_AI_CONFIG.pressureHealth ? "execute" : "pressure", spellId: chosenSpell.id };
+  // Outside emergencies, alternate direct attacks instead of repeatedly
+  // selecting the most expensive control spell.
+  const rotation = state.lastSpellId === "ember-lance" ? [lightning, emberLance] : [emberLance, lightning];
+  const choices = [...tacticalChoices, ...rotation.filter((candidate): candidate is SpellData => candidate !== undefined).map((candidate) => ({ spell: candidate, reason: "pressure" as const }))];
+  const affordableChoices = choices.filter(({ spell: candidate }) => state.mana >= candidate.manaCost);
+  const nextChoice = affordableChoices.find(({ spell: candidate }) => candidate.id !== state.lastSpellId) ?? affordableChoices[0];
+  if (nextChoice) {
+    return { action: "cast", reason: nextChoice.reason, spellId: nextChoice.spell.id };
   }
   return { action: "wait", reason: "recharging" };
 }

@@ -86,6 +86,7 @@ export class ArenaScene extends Phaser.Scene {
   private enemyCooldownUntil = 0;
   private enemyMana = MAX_MANA;
   private enemyProjectileSpell: SpellData | null = null;
+  private enemyLastSpellId: SpellId | null = null;
   private enemyStunnedUntil = 0;
   private enemyFrozenUntil = 0;
   private playerFrozenUntil = 0;
@@ -287,7 +288,9 @@ export class ArenaScene extends Phaser.Scene {
         playerHealth: this.playerHealth,
         opponentHealth: this.targetHealth,
         playerShieldActive: this.shieldActive,
+        playerPhase: this.phase,
         hasActiveProjectile: this.enemyProjectileSpell !== null,
+        lastSpellId: this.enemyLastSpellId,
         stunned: time < this.enemyStunnedUntil,
         availableSpells: SPELLS,
       }, getSpell("ember-lance"));
@@ -318,6 +321,7 @@ export class ArenaScene extends Phaser.Scene {
   private castOpponentSpell(now: number, spellId: SpellId) {
     const spell = getSpell(spellId);
     if (this.enemyMana < spell.manaCost || this.enemyPhase !== "ready" || now < this.enemyCooldownUntil) return;
+    this.enemyLastSpellId = spell.id;
     this.enemyMana -= spell.manaCost;
     this.enemyCooldownUntil = now + spell.cooldown * 1000;
     if (spell.kind === "defensive") {
