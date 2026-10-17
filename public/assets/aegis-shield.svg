@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="220" viewBox="0 0 180 220" fill="none">
+  <title>Aegis Shield</title>
+  <desc>A translucent blue-violet arcane shield with a luminous diamond sigil.</desc>
+  <defs>
+    <linearGradient id="aegis-shell" x1="34" y1="20" x2="150" y2="202" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E9FFFF" stop-opacity="0.92" />
+      <stop offset="0.35" stop-color="#82E9FF" stop-opacity="0.78" />
+      <stop offset="0.7" stop-color="#7186FF" stop-opacity="0.65" />
+      <stop offset="1" stop-color="#6D4DFF" stop-opacity="0.28" />
+    </linearGradient>
+    <radialGradient id="aegis-fill" cx="0" cy="0" r="1" gradientTransform="translate(90 104) rotate(90) scale(99 76)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A2F3FF" stop-opacity="0.22" />
+      <stop offset="0.62" stop-color="#7186FF" stop-opacity="0.1" />
+      <stop offset="1" stop-color="#5849D9" stop-opacity="0" />
+    </radialGradient>
+    <filter id="aegis-glow" x="-40%" y="-30%" width="180%" height="160%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="6" />
+    </filter>
+    <filter id="aegis-tight-glow" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="2" />
+    </filter>
+  </defs>
+  <path d="M90 9L159 38V101C159 151 132 188 90 211C48 188 21 151 21 101V38L90 9Z" fill="#6C72FF" fill-opacity="0.12" stroke="#7590FF" stroke-width="12" opacity="0.55" filter="url(#aegis-glow)" />
+  <path d="M90 13L153 40V100C153 145 130 180 90 203C50 180 27 145 27 100V40L90 13Z" fill="url(#aegis-fill)" stroke="url(#aegis-shell)" stroke-width="3" />
+  <path d="M90 27L139 48V99C139 134 120 163 90 183C60 163 41 134 41 99V48L90 27Z" stroke="#B7F7FF" stroke-opacity="0.55" stroke-width="1.5" stroke-dasharray="4 7" />
+  <path d="M90 50L113 89L90 128L67 89L90 50Z" fill="#8BEAFF" fill-opacity="0.18" stroke="#E9FFFF" stroke-width="2" filter="url(#aegis-tight-glow)" />
+  <path d="M90 59L106 89L90 116L74 89L90 59Z" fill="#E9FFFF" fill-opacity="0.8" />
+  <path d="M90 70V108M80 89H100" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" />
+  <circle cx="90" cy="89" r="7" fill="#FFFFFF" />
+</svg>

@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="128" viewBox="0 0 320 128" fill="none">
+  <title>Lightning Bolt</title>
+  <desc>A bright electric-blue lightning bolt with branching arcs and a white-hot core.</desc>
+  <defs>
+    <linearGradient id="lightning-aura-gradient" x1="20" y1="92" x2="310" y2="38" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4B50FF" stop-opacity="0" />
+      <stop offset="0.38" stop-color="#5B8CFF" stop-opacity="0.52" />
+      <stop offset="0.72" stop-color="#8FE8FF" stop-opacity="0.72" />
+      <stop offset="1" stop-color="#F5FDFF" stop-opacity="0" />
+    </linearGradient>
+    <linearGradient id="lightning-bolt-gradient" x1="49" y1="106" x2="288" y2="19" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4D5CFF" />
+      <stop offset="0.33" stop-color="#49A7FF" />
+      <stop offset="0.7" stop-color="#8BEAFF" />
+      <stop offset="1" stop-color="#F4FFFF" />
+    </linearGradient>
+    <linearGradient id="lightning-core-gradient" x1="94" y1="92" x2="288" y2="28" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B9C7FF" />
+      <stop offset="0.5" stop-color="#E8FBFF" />
+      <stop offset="1" stop-color="#FFFFFF" />
+    </linearGradient>
+    <filter id="lightning-soft-glow" x="-20%" y="-100%" width="140%" height="300%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="10" />
+    </filter>
+    <filter id="lightning-tight-glow" x="-15%" y="-80%" width="130%" height="260%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="3" />
+    </filter>
+  </defs>
+
+  <g id="lightning-bolt-glow" aria-hidden="true">
+    <path d="M17 83C51 47 78 29 111 45C143 61 164 37 192 41C228 46 250 18 310 35C275 47 253 64 222 61C190 58 167 78 135 72C98 65 72 97 17 83Z" fill="url(#lightning-aura-gradient)" filter="url(#lightning-soft-glow)" />
+    <path d="M26 83C65 52 91 45 119 57C145 68 164 50 194 53C225 56 250 35 299 39" stroke="#66D9FF" stroke-width="16" stroke-linecap="round" opacity="0.5" filter="url(#lightning-tight-glow)" />
+  </g>
+
+  <g id="lightning-bolt-arcs" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M74 47L56 26L67 49L37 38" stroke="#6B82FF" stroke-width="4" opacity="0.82" />
+    <path d="M121 73L102 102L126 84L142 116" stroke="#59A8FF" stroke-width="4" opacity="0.8" />
+    <path d="M193 48L205 22L210 42L238 13" stroke="#9CEBFF" stroke-width="3" opacity="0.88" />
+    <path d="M237 61L267 82L257 58L292 67" stroke="#6E79FF" stroke-width="3" opacity="0.8" />
+  </g>
+
+  <g id="lightning-bolt-shape">
+    <path d="M26 84L112 26L98 59L145 53L116 82L158 77L72 110L88 77L46 83L77 55L26 84Z" fill="url(#lightning-bolt-gradient)" />
+    <path d="M96 66L174 44L160 64L201 57L177 78L228 70L164 93L177 75L135 82L151 63L96 66Z" fill="url(#lightning-bolt-gradient)" />
+    <path d="M177 76L244 39L234 60L290 46L263 72L304 70L235 94L248 73L207 84L222 65L177 76Z" fill="url(#lightning-bolt-gradient)" />
+  </g>
+
+  <g id="lightning-bolt-core" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M57 82L111 45L105 66L146 59L123 75L164 69L76 99L91 75L57 82Z" fill="url(#lightning-core-gradient)" opacity="0.94" />
+    <path d="M115 68L169 53L162 68L201 62L179 76L226 69" stroke-width="4" opacity="0.95" />
+    <path d="M191 76L242 49L237 66L281 54" stroke-width="3" opacity="0.96" />
+  </g>
+
+  <g id="lightning-bolt-sparks" fill="#D9FAFF">
+    <path d="M50 17L53 27L63 30L53 33L50 43L47 33L37 30L47 27L50 17Z" opacity="0.92" />
+    <path d="M151 16L153 22L159 24L153 26L151 32L149 26L143 24L149 22L151 16Z" fill="#82D9FF" />
+    <path d="M287 22L289 28L295 30L289 32L287 38L285 32L279 30L285 28L287 22Z" />
+    <circle cx="24" cy="55" r="2.5" fill="#7E8CFF" />
+    <circle cx="185" cy="103" r="2" fill="#83C7FF" />
+    <circle cx="309" cy="85" r="2.2" fill="#FFFFFF" />
+  </g>
+</svg>

@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="128" viewBox="0 0 320 128" fill="none">
+  <title>Ember Lance</title>
+  <desc>A hand-painted, white-hot flame lance with a transparent background.</desc>
+  <defs>
+    <linearGradient id="ember-glow-gradient" x1="16" y1="82" x2="313" y2="62" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#D63826" />
+      <stop offset="0.46" stop-color="#FF6B32" />
+      <stop offset="0.8" stop-color="#FFB642" />
+      <stop offset="1" stop-color="#FFF1B0" />
+    </linearGradient>
+    <linearGradient id="ember-flame-gradient" x1="31" y1="91" x2="304" y2="59" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9E2225" />
+      <stop offset="0.24" stop-color="#E84927" />
+      <stop offset="0.58" stop-color="#FF7B2F" />
+      <stop offset="0.84" stop-color="#FFB943" />
+      <stop offset="1" stop-color="#FFE29A" />
+    </linearGradient>
+    <linearGradient id="ember-core-gradient" x1="76" y1="77" x2="301" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF8A37" />
+      <stop offset="0.42" stop-color="#FFD05A" />
+      <stop offset="0.78" stop-color="#FFF4B8" />
+      <stop offset="1" stop-color="#FFFFFF" />
+    </linearGradient>
+    <radialGradient id="ember-aura-gradient" cx="0" cy="0" r="1" gradientTransform="translate(187 66) rotate(174) scale(145 45)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFB43D" stop-opacity="0.64" />
+      <stop offset="0.58" stop-color="#F04A2C" stop-opacity="0.24" />
+      <stop offset="1" stop-color="#B31E2D" stop-opacity="0" />
+    </radialGradient>
+    <filter id="ember-lance-soft-glow" x="-20%" y="-80%" width="140%" height="260%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="8" />
+    </filter>
+    <filter id="ember-lance-tight-glow" x="-15%" y="-60%" width="130%" height="220%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="2.5" />
+    </filter>
+  </defs>
+
+  <g id="ember-lance-glow" aria-hidden="true">
+    <path
+      d="M14 82C40 69 56 55 80 44C113 29 145 35 178 42C211 49 247 31 280 43C297 49 308 57 318 64L286 80C256 94 228 87 199 80C166 72 140 95 107 102C77 108 56 94 41 83C30 76 22 85 14 82Z"
+      fill="url(#ember-aura-gradient)"
+      filter="url(#ember-lance-soft-glow)"
+    />
+    <path
+      d="M28 81C75 66 105 47 150 51C196 55 233 43 292 61L307 65C248 80 211 67 169 72C116 79 84 96 28 81Z"
+      fill="#FF6A32"
+      opacity="0.52"
+      filter="url(#ember-lance-tight-glow)"
+    />
+  </g>
+
+  <g id="ember-lance-flame-tail">
+    <path d="M82 58C66 50 53 37 57 20C69 35 83 38 99 45C91 50 86 54 82 58Z" fill="#E84227" />
+    <path d="M76 73C54 68 38 57 31 42C50 49 67 48 88 53C82 61 78 67 76 73Z" fill="#F65A2B" opacity="0.9" />
+    <path d="M65 83C48 88 34 101 43 118C56 104 72 99 93 90C82 90 72 87 65 83Z" fill="#C72D28" />
+    <path d="M103 48C94 35 98 18 113 9C112 27 124 38 139 44C124 42 112 44 103 48Z" fill="#FF6C2E" />
+    <path d="M53 79C37 78 22 86 17 99C34 96 48 94 65 87C60 85 56 82 53 79Z" fill="#E84529" opacity="0.82" />
+  </g>
+
+  <g id="ember-lance-silhouette">
+    <path
+      d="M13 82C38 72 52 55 78 45C112 31 145 38 177 43C211 48 250 30 281 44C297 50 308 57 318 64L285 78C257 91 228 85 200 79C165 71 140 94 107 100C78 105 57 92 42 82C31 76 23 84 13 82Z"
+      fill="url(#ember-flame-gradient)"
+    />
+    <path
+      d="M28 79C57 70 72 53 99 47C126 41 149 47 178 52C210 57 241 40 267 47C283 51 294 57 306 64L278 70C250 75 228 73 205 70C177 66 157 71 136 80C113 90 92 88 74 77C57 67 45 78 28 79Z"
+      fill="#FF8A35"
+      opacity="0.92"
+    />
+    <path
+      d="M61 77C89 66 111 54 138 55C164 56 184 64 208 63C235 62 258 54 289 62L304 65L278 69C250 73 228 71 205 68C174 64 152 70 130 79C104 89 82 86 61 77Z"
+      fill="url(#ember-core-gradient)"
+    />
+  </g>
+
+  <g id="ember-lance-hot-core">
+    <path
+      d="M81 75C108 64 126 59 148 60C168 61 184 66 207 66C232 66 255 61 287 64L302 65L277 68C250 71 229 69 205 67C177 64 158 70 136 78C116 85 97 83 81 75Z"
+      fill="#FFF7C7"
+      opacity="0.9"
+    />
+    <path
+      d="M104 73C136 64 157 65 181 67C205 69 232 68 266 65"
+      stroke="#FFFFFF"
+      stroke-width="3"
+      stroke-linecap="round"
+      opacity="0.92"
+    />
+    <path d="M291 62L311 64L291 67L298 64L291 62Z" fill="#FFFFFF" />
+  </g>
+
+  <g id="ember-lance-sparks" fill="#FFE9A3">
+    <path d="M35 33L38 40L45 43L38 46L35 53L32 46L25 43L32 40L35 33Z" opacity="0.9" />
+    <path d="M73 24L75 29L80 31L75 33L73 38L71 33L66 31L71 29L73 24Z" fill="#FF9A3B" />
+    <circle cx="49" cy="22" r="2.5" />
+    <circle cx="22" cy="69" r="2" fill="#FFB744" />
+    <circle cx="92" cy="14" r="1.8" fill="#FFF7C7" />
+    <circle cx="22" cy="106" r="1.8" fill="#FF7040" />
+  </g>
+</svg>
