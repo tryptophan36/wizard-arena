@@ -332,3 +332,125 @@ button { font: inherit; }
   .spellbook-footer { align-items: start; flex-direction: column; }
   .arena-cta { width: 100%; justify-content: space-between; }
 }
+
+/* Spellbook reader */
+.spellbook-reader-page { position: relative; min-height: 100vh; overflow: hidden; padding: 28px clamp(22px, 5vw, 76px) 34px; background: radial-gradient(ellipse at 75% 42%, rgba(39, 57, 112, .4), transparent 32%), radial-gradient(circle at 18% 82%, rgba(75, 31, 52, .28), transparent 30%), #090d24; isolation: isolate; }
+.spellbook-reader-page::before { position: absolute; inset: 0; z-index: -1; background: linear-gradient(115deg, transparent 0 49.9%, rgba(114,230,211,.04) 50%, transparent 50.1%), linear-gradient(25deg, transparent 0 49.9%, rgba(244,191,104,.03) 50%, transparent 50.1%); background-size: 120px 120px; content: ""; pointer-events: none; }
+.spellbook-reader-stars { position: absolute; inset: 0; z-index: -1; opacity: .42; background-image: radial-gradient(circle at 13% 22%, var(--cyan) 0 1px, transparent 1.5px), radial-gradient(circle at 83% 34%, var(--gold) 0 1px, transparent 1.5px), radial-gradient(circle at 67% 78%, var(--orange) 0 1px, transparent 1.5px), radial-gradient(circle at 41% 59%, #c2c9e8 0 1px, transparent 1.5px); background-size: 230px 190px, 310px 270px, 270px 320px, 360px 240px; pointer-events: none; }
+.spellbook-reader-header, .spellbook-reader-intro, .spellbook-reader, .spellbook-reader-footer { position: relative; z-index: 1; width: min(1180px, 100%); margin-right: auto; margin-left: auto; }
+.spellbook-reader-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 24px; }
+.spellbook-reader-header .spellbook-back { align-self: center; justify-self: start; }
+.spellbook-reader-header .spellbook-brand { justify-self: center; }
+.spellbook-reader-header .spellbook-status { justify-self: end; }
+.spellbook-reader-intro { display: flex; align-items: end; justify-content: space-between; gap: 28px; padding: clamp(42px, 7vh, 76px) 0 28px; }
+.spellbook-reader-intro h2 { margin: 0; color: var(--cream); font-size: clamp(35px, 5.3vw, 68px); font-weight: 500; letter-spacing: -.06em; line-height: .92; }
+.spellbook-reader-intro h2 em { color: var(--orange); font-style: normal; text-shadow: 0 0 28px rgba(255,120,78,.28); }
+.spellbook-reader-intro p:not(.eyebrow) { max-width: 530px; margin: 16px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.spellbook-reader-key { display: flex; align-items: center; gap: 7px; padding-bottom: 4px; color: var(--cream); }
+.spellbook-reader-key span { display: grid; place-items: center; width: 27px; height: 27px; border: 1px solid rgba(114,230,211,.5); color: var(--cyan); font-size: 15px; }
+.spellbook-reader-key small { margin-left: 6px; color: var(--muted); font-size: 7px; letter-spacing: .13em; }
+.spellbook-reader { padding-top: 6px; }
+.spellbook-book-wrap { position: relative; padding: 0 11px 17px; }
+.spellbook-book-shadow { position: absolute; right: 3%; bottom: 0; left: 3%; height: 32px; border-radius: 50%; background: rgba(0,0,0,.55); filter: blur(15px); }
+.spellbook-book { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-height: 610px; border: 1px solid rgba(244,191,104,.5); background: #c0a76f; box-shadow: 0 25px 65px rgba(0,0,0,.45), 0 0 0 7px rgba(31,34,69,.68); animation: spellbook-page-turn .4s ease both; }
+@keyframes spellbook-page-turn { from { opacity: .3; transform: translateX(8px) rotateY(-2deg); } to { opacity: 1; transform: translateX(0) rotateY(0); } }
+.spellbook-leaf { position: relative; min-width: 0; overflow: hidden; padding: 26px clamp(23px, 4vw, 46px) 30px; background: #ede2c5; color: #182143; }
+.spellbook-art-leaf { border-right: 1px solid rgba(65,53,44,.2); background: radial-gradient(circle at 50% 38%, rgba(244,191,104,.32), transparent 32%), linear-gradient(135deg, #f1e8d0, #ddcda8); }
+.spellbook-detail-leaf { background: linear-gradient(105deg, #e5d7b3, #f3e9ce 17%, #eadcba); }
+.spellbook-leaf::before { position: absolute; inset: 12px; border: 1px solid rgba(52,53,62,.18); content: ""; pointer-events: none; }
+.spellbook-page-corner { position: absolute; top: 12px; left: 12px; width: 22px; height: 22px; border-top: 1px solid rgba(50,48,56,.46); border-left: 1px solid rgba(50,48,56,.46); }
+.spellbook-page-corner-right { right: 12px; left: auto; border-right: 1px solid rgba(50,48,56,.46); border-left: 0; }
+.spellbook-leaf-topline { position: relative; z-index: 1; display: flex; justify-content: space-between; gap: 15px; color: rgba(35,38,65,.62); font-family: var(--font-geist-mono), monospace; font-size: 7px; letter-spacing: .14em; }
+.spellbook-art-stage { position: relative; display: grid; place-items: center; height: 320px; margin: 29px 0 18px; overflow: hidden; border: 1px solid rgba(42,49,87,.28); background: radial-gradient(circle, rgba(48,74,139,.22), transparent 58%), rgba(17,27,64,.08); }
+.spellbook-art-stage::before, .spellbook-art-stage::after { position: absolute; border: 1px solid rgba(41,56,115,.22); border-radius: 50%; content: ""; }
+.spellbook-art-stage::before { width: 250px; height: 250px; }
+.spellbook-art-stage::after { width: 185px; height: 185px; border-style: dashed; }
+.spellbook-art-orbit { position: absolute; border: 1px solid rgba(114,230,211,.28); border-radius: 50%; transform: rotate(-24deg); }
+.spellbook-art-orbit-one { width: 390px; height: 145px; }
+.spellbook-art-orbit-two { width: 280px; height: 102px; border-color: rgba(115,135,255,.3); transform: rotate(27deg); }
+.spellbook-art-rune { position: absolute; top: 17px; right: 19px; z-index: 2; display: grid; place-items: center; width: 57px; height: 57px; border: 1px solid rgba(182,105,45,.7); background: rgba(244,231,197,.75); color: #a65331; font-size: 31px; text-shadow: 0 0 12px rgba(182,105,45,.28); }
+.spellbook-art-image { position: relative; z-index: 1; width: min(86%, 360px); height: 260px; }
+.spellbook-art-image img { object-fit: contain; filter: drop-shadow(0 9px 16px rgba(13,20,57,.28)); }
+.spellbook-art-aegis .spellbook-art-image { width: 190px; height: 270px; }
+.spellbook-art-freeze .spellbook-art-image { width: 275px; height: 275px; }
+.spellbook-art-caption { position: relative; z-index: 1; display: flex; align-items: center; gap: 13px; }
+.spellbook-art-symbol { display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid rgba(182,105,45,.64); color: #b56432; font-size: 23px; }
+.spellbook-art-caption .detail-label, .spellbook-detail-leaf .detail-label { color: rgba(35,38,65,.6); }
+.spellbook-art-caption strong { display: block; margin-top: 5px; color: #25305d; font-size: 9px; letter-spacing: .14em; }
+.spellbook-rune-card { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) 155px; gap: 3px 12px; align-items: center; margin-top: 22px; padding: 12px 14px; border: 1px solid rgba(42,49,87,.35); background: #121b40; box-shadow: inset 0 0 28px rgba(114,230,211,.06); }
+.spellbook-rune-heading { display: flex; flex-direction: column; gap: 5px; }
+.spellbook-rune-heading .detail-label { color: rgba(190,207,222,.68); }
+.spellbook-rune-heading strong { color: #f4e9ce; font-size: 10px; letter-spacing: .12em; }
+.spellbook-rune-diagram { display: grid; place-items: center; min-height: 92px; border-left: 1px solid rgba(114,230,211,.22); }
+.spellbook-rune-svg { display: block; width: 150px; height: 100px; overflow: visible; }
+.spellbook-rune-stroke { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 5; filter: drop-shadow(0 0 5px currentColor); }
+.spellbook-rune-start { fill: currentColor; opacity: .95; }
+.spellbook-rune-svg-ember-lance { color: #ff8a4d; }
+.spellbook-rune-svg-lightning { color: #8feaff; }
+.spellbook-rune-svg-aegis { color: #72e6d3; }
+.spellbook-rune-svg-freeze { color: #9ba8ff; }
+.spellbook-rune-card p { grid-column: 1 / -1; margin: 5px 0 0; color: #8fe0d0; font-family: var(--font-geist-mono), monospace; font-size: 7px; letter-spacing: .06em; line-height: 1.5; }
+.spellbook-quote { position: relative; z-index: 1; max-width: 350px; margin: 29px 0 0; color: #4e4c58; font-family: Georgia, serif; font-size: 15px; font-style: italic; line-height: 1.45; }
+.spellbook-spine { position: absolute; top: 0; bottom: 0; left: 50%; z-index: 3; width: 23px; border-right: 1px solid rgba(70,49,38,.3); border-left: 1px solid rgba(255,246,210,.35); background: linear-gradient(90deg, rgba(65,46,41,.28), rgba(255,247,210,.38) 45%, rgba(65,46,41,.22)); box-shadow: 0 0 17px rgba(44,35,38,.2); transform: translateX(-50%); pointer-events: none; }
+.spellbook-detail-heading { position: relative; z-index: 1; margin: 45px 0 20px; }
+.spellbook-detail-heading .eyebrow { color: #a45e35; }
+.spellbook-detail-heading h3 { margin: 8px 0 9px; color: #1d2851; font-size: clamp(28px, 3.4vw, 46px); font-weight: 500; letter-spacing: .035em; line-height: .95; }
+.spellbook-detail-heading p:not(.eyebrow) { max-width: 390px; margin: 0; color: #5c5960; font-size: 11px; line-height: 1.55; }
+.spellbook-stat-grid { position: relative; z-index: 1; display: flex; align-items: baseline; justify-content: space-between; border-top: 1px solid rgba(55,57,70,.25); border-bottom: 1px solid rgba(55,57,70,.25); }
+.spellbook-stat-grid div { display: flex; align-items: baseline; gap: 7px; padding: 12px 12px 11px 0; }
+.spellbook-stat-grid div + div { padding-left: 12px; border-left: 1px solid rgba(55,57,70,.2); }
+.spellbook-stat-grid span { color: #77716c; font-size: 7px; letter-spacing: .14em; }
+.spellbook-stat-grid strong { color: #ae5b32; font-size: 17px; font-weight: 500; white-space: nowrap; }
+.spellbook-stat-grid small { color: #77716c; font-size: 7px; letter-spacing: .08em; }
+.spellbook-detail-section { position: relative; z-index: 1; padding: 17px 0; border-bottom: 1px solid rgba(55,57,70,.2); }
+.spellbook-section-label { display: flex; align-items: center; gap: 10px; }
+.spellbook-section-label > span { display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid rgba(166,92,47,.58); color: #a55c35; font-family: var(--font-geist-mono), monospace; font-size: 8px; }
+.spellbook-section-label strong { display: block; margin-top: 4px; color: #26315d; font-size: 9px; letter-spacing: .13em; }
+.spellbook-gesture-hint { margin: 12px 0 0 35px; color: #a45e35; font-family: var(--font-geist-mono), monospace; font-size: 9px; letter-spacing: .08em; line-height: 1.5; }
+.spellbook-effect-section > p { margin: 12px 0 0 35px; color: #5c5960; font-size: 10px; line-height: 1.55; }
+.spellbook-step-list { display: grid; gap: 0; margin: 12px 0 0 35px; padding: 0; list-style: none; }
+.spellbook-step-list li { display: grid; grid-template-columns: 23px 1fr auto; gap: 9px; align-items: start; padding: 10px 0; border-top: 1px solid rgba(55,57,70,.14); }
+.spellbook-step-list li > span { display: grid; place-items: center; width: 21px; height: 21px; color: #a45e35; font-family: var(--font-geist-mono), monospace; font-size: 8px; }
+.spellbook-step-list strong { color: #26315d; font-size: 9px; letter-spacing: .05em; }
+.spellbook-step-list p { max-width: 300px; margin: 4px 0 0; color: #6a6666; font-size: 9px; line-height: 1.4; }
+.spellbook-step-list b { color: #3b8e8b; font-family: var(--font-geist-mono), monospace; font-size: 7px; font-weight: 500; letter-spacing: .05em; white-space: nowrap; }
+.spellbook-detail-footer { position: relative; z-index: 1; display: flex; align-items: end; justify-content: space-between; gap: 15px; padding-top: 17px; }
+.spellbook-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.spellbook-tags span { padding: 5px 6px; border: 1px solid rgba(48,132,128,.35); color: #307f7c; font-size: 7px; letter-spacing: .1em; }
+.spellbook-arena-cta { display: inline-flex; align-items: center; gap: 12px; padding: 11px 13px; border: 1px solid rgba(166,92,47,.65); color: #8f4f2f; font-size: 8px; font-weight: 700; letter-spacing: .1em; text-decoration: none; white-space: nowrap; transition: background .2s ease, color .2s ease, transform .2s ease; }
+.spellbook-arena-cta span { color: #307f7c; font-size: 15px; }
+.spellbook-arena-cta:hover { background: #a45e35; color: #f6eaca; transform: translateY(-1px); }
+.spellbook-page-navigation { display: flex; justify-content: flex-end; gap: 8px; padding: 15px 11px 0; }
+.spellbook-page-navigation > button { display: grid; place-items: center; width: 38px; height: 32px; padding: 0; border: 1px solid rgba(133,149,203,.35); background: rgba(22,28,67,.56); color: var(--cyan); cursor: pointer; transition: border-color .2s ease, background .2s ease, opacity .2s ease; }
+.spellbook-page-navigation > button:hover:not(:disabled) { border-color: var(--cyan); background: rgba(40,121,116,.3); }
+.spellbook-page-navigation > button > span { font-size: 18px; }
+.spellbook-page-navigation > button:disabled { cursor: not-allowed; opacity: .3; }
+.spellbook-reader-footer { display: flex; align-items: end; justify-content: space-between; gap: 25px; margin-top: 30px; padding-top: 17px; border-top: 1px solid rgba(133,149,203,.2); }
+.spellbook-reader-footer p:not(.eyebrow) { margin: 5px 0 0; color: var(--cream); font-size: 11px; }
+.spellbook-return-link { color: var(--muted); font-size: 8px; letter-spacing: .15em; text-decoration: none; }
+.spellbook-return-link span { margin-left: 8px; color: var(--cyan); font-size: 14px; }
+.spellbook-return-link:hover { color: var(--cream); }
+@media (max-width: 800px) {
+  .spellbook-reader-page { overflow: visible; padding: 22px 20px 32px; }
+  .spellbook-reader-header { grid-template-columns: 1fr auto; }
+  .spellbook-reader-header .spellbook-brand { grid-column: 2; grid-row: 1; }
+  .spellbook-reader-header .spellbook-brand .brand-mark, .spellbook-reader-header .spellbook-status { display: none; }
+  .spellbook-reader-intro { display: block; padding-top: 56px; }
+  .spellbook-reader-key { margin-top: 20px; }
+  .spellbook-book { grid-template-columns: 1fr; min-height: 0; }
+  .spellbook-art-leaf { border-right: 0; border-bottom: 1px solid rgba(65,53,44,.2); }
+  .spellbook-spine { top: 50%; right: 0; bottom: auto; left: 0; width: auto; height: 20px; border-top: 1px solid rgba(70,49,38,.3); border-right: 0; border-bottom: 1px solid rgba(255,246,210,.35); border-left: 0; background: linear-gradient(180deg, rgba(65,46,41,.28), rgba(255,247,210,.38) 45%, rgba(65,46,41,.22)); transform: translateY(-50%); }
+  .spellbook-detail-heading { margin-top: 36px; }
+  .spellbook-page-navigation { justify-content: space-between; padding-right: 0; padding-left: 0; }
+  .spellbook-reader-footer { align-items: start; flex-direction: column; gap: 16px; }
+}
+@media (max-width: 480px) {
+  .spellbook-reader-intro h2 { font-size: 45px; }
+  .spellbook-leaf { padding-right: 20px; padding-left: 20px; }
+  .spellbook-art-stage { height: 270px; }
+  .spellbook-art-image { height: 220px; }
+  .spellbook-art-aegis .spellbook-art-image { height: 235px; }
+  .spellbook-art-freeze .spellbook-art-image { width: 230px; height: 230px; }
+  .spellbook-detail-footer { align-items: start; flex-direction: column; }
+  .spellbook-arena-cta { width: 100%; justify-content: space-between; }
+}
