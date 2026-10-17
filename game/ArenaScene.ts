@@ -22,11 +22,13 @@ export type EnemyActivity = "waiting" | "charging" | "flying" | "impact" | "stun
 
 export type ArenaCallbacks = {
   onManaChange: (mana: number) => void;
+  onEnemyManaChange: (mana: number) => void;
   onTargetHealthChange: (health: number) => void;
   onPlayerHealthChange: (health: number) => void;
   onEnemyActivityChange: (activity: EnemyActivity) => void;
   onGameStateChange: (state: ArenaGameState) => void;
   onCooldownChange: (seconds: number) => void;
+  onEnemyCooldownChange: (seconds: number) => void;
   onPhaseChange: (phase: "ready" | "charging" | "flying" | "impact") => void;
   onGestureChange: (feedback: GestureFeedback) => void;
   onSpellChange: (spellId: SpellId) => void;
@@ -34,6 +36,7 @@ export type ArenaCallbacks = {
 
 const MAX_MANA = 100;
 const MAX_HEALTH = 100;
+const MANA_REGEN_PER_SECOND = 5;
 const DEFAULT_FREEZE_DURATION_MS = 2500;
 const SHIELDED_FREEZE_DURATION_MS = 1000;
 type Point = { x: number; y: number };
@@ -65,6 +68,7 @@ export class ArenaScene extends Phaser.Scene {
   private enemyShieldUntil = 0;
   private enemyShieldBlockedUntil = 0;
   private lastUiUpdate = -1;
+  private lastEnemyUiUpdate = -1;
   private art!: Phaser.GameObjects.Graphics;
   private emberLance!: Phaser.GameObjects.Image;
   private enemyEmberLance!: Phaser.GameObjects.Image;
@@ -195,6 +199,8 @@ export class ArenaScene extends Phaser.Scene {
     this.scale.on("resize", () => this.drawArena(0));
     this.callbacks.onPhaseChange("ready");
     this.callbacks.onManaChange(this.mana);
+    this.callbacks.onEnemyManaChange(this.enemyMana);
+    this.callbacks.onEnemyCooldownChange(0);
     this.callbacks.onTargetHealthChange(this.targetHealth);
     this.callbacks.onPlayerHealthChange(this.playerHealth);
     this.callbacks.onEnemyActivityChange(this.enemyActivity);
@@ -212,8 +218,8 @@ export class ArenaScene extends Phaser.Scene {
       this.drawArena(time);
       return;
     }
-    if (this.phase === "ready" && this.mana < MAX_MANA) this.mana = Math.min(MAX_MANA, this.mana + dt * 5);
-    if (this.enemyPhase === "ready" && this.enemyMana < MAX_MANA) this.enemyMana = Math.min(MAX_MANA, this.enemyMana + dt * 5);
+    if (this.phase === "ready" && this.mana < MAX_MANA) this.mana = Math.min(MAX_MANA, this.mana + dt * MANA_REGEN_PER_SECOND);
+    if (this.enemyPhase === "ready" && this.enemyMana < MAX_MANA) this.enemyMana = Math.min(MAX_MANA, this.enemyMana + dt * MANA_REGEN_PER_SECOND);
     if (this.shieldActive && time >= this.shieldUntil) this.shieldActive = false;
     if (this.enemyShieldActive && time >= this.enemyShieldUntil) {
       this.enemyShieldActive = false;
@@ -237,6 +243,12 @@ export class ArenaScene extends Phaser.Scene {
       this.lastUiUpdate = cooldown;
       this.callbacks.onCooldownChange(cooldown);
       this.callbacks.onManaChange(this.mana);
+    }
+    const enemyCooldown = Math.max(0, (this.enemyCooldownUntil - time) / 1000);
+    if (Math.abs(enemyCooldown - this.lastEnemyUiUpdate) > 0.03 || enemyCooldown === 0) {
+      this.lastEnemyUiUpdate = enemyCooldown;
+      this.callbacks.onEnemyCooldownChange(enemyCooldown);
+      this.callbacks.onEnemyManaChange(this.enemyMana);
     }
     const activeSpell = this.projectileSpell ?? this.spell;
     if (this.phase === "charging" && time - this.phaseStarted > activeSpell.timings.charging) {
@@ -315,7 +327,6 @@ export class ArenaScene extends Phaser.Scene {
     } else if (this.enemyPhase === "impact" && enemySpell && time - this.enemyPhaseStarted >= enemySpell.timings.impact) {
       this.enemyPhase = "ready"; this.enemyProjectileSpell = null; this.setEnemyActivity("waiting");
     }
-    if (this.enemyPhase === "ready" && this.enemyMana < MAX_MANA) this.callbacks.onManaChange(this.mana);
   }
 
   private castOpponentSpell(now: number, spellId: SpellId) {
@@ -324,6 +335,8 @@ export class ArenaScene extends Phaser.Scene {
     this.enemyLastSpellId = spell.id;
     this.enemyMana -= spell.manaCost;
     this.enemyCooldownUntil = now + spell.cooldown * 1000;
+    this.callbacks.onEnemyManaChange(this.enemyMana);
+    this.callbacks.onEnemyCooldownChange(spell.cooldown);
     if (spell.kind === "defensive") {
       this.enemyShieldActive = true;
       this.enemyShieldUntil = now + (spell.shieldDurationMs ?? 1600);

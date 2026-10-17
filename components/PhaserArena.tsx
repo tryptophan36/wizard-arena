@@ -10,7 +10,7 @@ type ArenaGame = {
   destroy: (removeCanvas: boolean) => void;
 };
 
-export default function PhaserArena({ onManaChange, onTargetHealthChange, onPlayerHealthChange, onEnemyActivityChange, onGameStateChange, onCooldownChange, onPhaseChange, onGestureChange, onSpellChange, spellId, drawingTool }: PhaserArenaProps) {
+export default function PhaserArena({ onManaChange, onEnemyManaChange, onTargetHealthChange, onPlayerHealthChange, onEnemyActivityChange, onGameStateChange, onCooldownChange, onEnemyCooldownChange, onPhaseChange, onGestureChange, onSpellChange, spellId, drawingTool }: PhaserArenaProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const drawingToolStateRef = useRef<DrawingToolState>({ value: drawingTool });
 
@@ -25,7 +25,7 @@ export default function PhaserArena({ onManaChange, onTargetHealthChange, onPlay
     async function boot() {
       const { createArenaGame } = await import("@/game/ArenaScene");
       if (cancelled || !mountRef.current) return;
-      game = createArenaGame(mountRef.current, { onManaChange, onTargetHealthChange, onPlayerHealthChange, onEnemyActivityChange, onGameStateChange, onCooldownChange, onPhaseChange, onGestureChange, onSpellChange }, spellId, drawingToolStateRef.current);
+      game = createArenaGame(mountRef.current, { onManaChange, onEnemyManaChange, onTargetHealthChange, onPlayerHealthChange, onEnemyActivityChange, onGameStateChange, onCooldownChange, onEnemyCooldownChange, onPhaseChange, onGestureChange, onSpellChange }, spellId, drawingToolStateRef.current);
     }
 
     void boot();
@@ -33,7 +33,7 @@ export default function PhaserArena({ onManaChange, onTargetHealthChange, onPlay
       cancelled = true;
       game?.destroy(true);
     };
-  }, [onManaChange, onTargetHealthChange, onPlayerHealthChange, onEnemyActivityChange, onGameStateChange, onCooldownChange, onPhaseChange, onGestureChange, onSpellChange, spellId]);
+  }, [onManaChange, onEnemyManaChange, onTargetHealthChange, onPlayerHealthChange, onEnemyActivityChange, onGameStateChange, onCooldownChange, onEnemyCooldownChange, onPhaseChange, onGestureChange, onSpellChange, spellId]);
 
   return <div ref={mountRef} className="arena-canvas" aria-label="Playable wizard arena" />;
 }
