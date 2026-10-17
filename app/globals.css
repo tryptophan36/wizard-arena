@@ -23,6 +23,13 @@ button { font: inherit; }
 .spellbook-nav { margin-left: 7px; padding-left: 12px; border-left: 1px solid rgba(157,164,196,.3); color: var(--cream); text-decoration: none; transition: color .2s ease; }
 .spellbook-nav:hover { color: var(--cyan); }
 .mouse-hint { padding: 5px 8px; border: 1px solid rgba(157,164,196,.42); color: var(--cream); font-size: 8px; }
+.drawing-toolbar { position: absolute; z-index: 3; top: 50%; left: 18px; display: flex; flex-direction: column; align-items: stretch; gap: 9px; padding: 9px 7px; border: 1px solid rgba(133,149,203,.35); background: rgba(9,13,36,.88); box-shadow: 0 12px 35px rgba(0,0,0,.3); transform: translateY(-50%); pointer-events: auto; }
+.drawing-toolbar-label { color: var(--muted); font-size: 7px; letter-spacing: .16em; white-space: nowrap; }
+.drawing-tool-list { display: flex; flex-direction: column; gap: 5px; }
+.drawing-tool { display: flex; align-items: center; gap: 6px; min-width: 88px; padding: 6px 8px; border: 1px solid rgba(133,149,203,.3); background: rgba(22,28,67,.52); color: var(--muted); cursor: pointer; font-size: 7px; letter-spacing: .1em; line-height: 1; transition: color .2s ease, border-color .2s ease, background .2s ease; }
+.drawing-tool:hover { border-color: rgba(114,230,211,.68); color: var(--cream); }
+.drawing-tool[aria-pressed="true"] { border-color: var(--cyan); background: rgba(40,121,116,.3); color: var(--cream); box-shadow: inset 0 -2px 0 var(--cyan), 0 0 14px rgba(114,230,211,.12); }
+.drawing-tool-icon { color: var(--cyan); font-size: 15px; line-height: .7; }
 .encounter-card { top: 130px; left: 42px; width: 190px; padding-left: 16px; border-left: 1px solid rgba(114,230,211,.52); }
 .encounter-card h2 { font-size: 12px; line-height: 1.45; }
 .encounter-rule { width: 170px; height: 3px; margin-top: 12px; background: rgba(36,46,82,.9); }
@@ -136,6 +143,10 @@ button { font: inherit; }
   .player-status { right: 20px; bottom: 153px; width: calc(100vw - 40px); }
   .footer-hint { left: 20px; right: 20px; bottom: 19px; font-size: 7px; }
   .footer-hint i, .footer-hint > span:nth-of-type(2), .resonance-dots { display: none; }
+  .drawing-toolbar { top: 50%; bottom: auto; left: 10px; gap: 5px; padding: 5px; }
+  .drawing-toolbar-label { display: none; }
+  .drawing-tool { min-width: 78px; gap: 4px; padding: 6px 7px; font-size: 6px; }
+  .drawing-tool-icon { font-size: 13px; }
 }
 
 @media (max-width: 800px) {

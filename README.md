@@ -33,6 +33,9 @@ or multiplayer implementation yet.
   and gesture; opening `/` keeps Ember Lance equipped by default.
 - Open `/spells` or choose `SPELLBOOK` in the arena header to study the rune
   diagram and drawing order before entering the duel.
+- Use the arena drawing toolbar to switch between Freehand, Circle, Square, and
+  Line tools. Freehand is selected by default, and the selected tool stays
+  active until you change it.
 - Each gesture must be long enough to pass recognition before its spell launches;
   a short or malformed rune shows a failure hint and does not spend mana.
 - Projectile travel is deliberately slower, giving the defender time to draw

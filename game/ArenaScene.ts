@@ -4,6 +4,7 @@ import { EMBER_LANCE_ASSET } from "@/game/emberLanceAsset";
 import { LIGHTNING_BOLT_ASSET } from "@/game/lightningBoltAsset";
 import { SHIELD_ASSET } from "@/game/shieldAsset";
 import { FREEZE_ASSET } from "@/game/freezeAsset";
+import { DEFAULT_DRAWING_TOOL, normalizeDrawingStroke, type DrawingTool, type DrawingToolState } from "@/game/drawingTool";
 import { getSpell, SPELLS, type SpellData, type SpellId } from "@/game/spellData";
 import { recognizeAnySpell } from "@/game/spellRecognition";
 import { decideOpponentAction, OPPONENT_AI_CONFIG, type OpponentPhase } from "@/game/opponentAI";
@@ -74,6 +75,8 @@ export class ArenaScene extends Phaser.Scene {
   private enemyShield!: Phaser.GameObjects.Image;
   private gestureStrokes: RuneStroke[] = [];
   private activeStroke: RunePoint[] = [];
+  private drawingTool: DrawingTool = DEFAULT_DRAWING_TOOL;
+  private drawingToolState: DrawingToolState;
   private gestureActive = false;
   private gestureFeedback: GestureFeedback = { status: "idle", message: "DRAW RUNE", hint: "DRAW A REGISTERED SPELL SYMBOL" };
   private gestureFeedbackUntil = 0;
@@ -88,14 +91,29 @@ export class ArenaScene extends Phaser.Scene {
   private nextEnemyDecisionAt: number = OPPONENT_AI_CONFIG.openingDelayMs;
   private enemyActivity: EnemyActivity = "waiting";
 
-  constructor(callbacks: ArenaCallbacks, spellId: SpellId = "ember-lance") {
+  constructor(callbacks: ArenaCallbacks, spellId: SpellId = "ember-lance", drawingToolState: DrawingToolState = { value: DEFAULT_DRAWING_TOOL }) {
     super({ key: "WizardArena" });
     this.callbacks = callbacks;
     this.spell = getSpell(spellId);
+    this.drawingToolState = drawingToolState;
+  }
+
+  public setDrawingTool(tool: DrawingTool) {
+    if (this.drawingTool === tool) return;
+    this.drawingTool = tool;
+    this.gestureActive = false;
+    this.gestureStrokes = [];
+    this.activeStroke = [];
+    this.gestureFeedbackUntil = 0;
+    this.setGestureFeedback({ status: "idle", message: `${tool.toUpperCase()} TOOL READY`, hint: this.spell.gesture.hint });
   }
 
   private getInitialGesture() {
     return { status: "idle" as const, message: `DRAW ${this.spell.name} RUNE`, hint: this.spell.gesture.hint };
+  }
+
+  private syncDrawingTool() {
+    if (this.drawingToolState.value !== this.drawingTool) this.setDrawingTool(this.drawingToolState.value);
   }
 
   preload() {
@@ -172,6 +190,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number) {
+    this.syncDrawingTool();
     const dt = delta / 1000;
     if (this.gameState !== "playing") {
       this.drawArena(time);
@@ -378,7 +397,8 @@ export class ArenaScene extends Phaser.Scene {
     const finalPoint = { x: pointer.worldX, y: pointer.worldY, timestamp: now };
     const previous = this.activeStroke[this.activeStroke.length - 1];
     if (!previous || Phaser.Math.Distance.Between(previous.x, previous.y, finalPoint.x, finalPoint.y) >= 2) this.activeStroke.push(finalPoint);
-    this.gestureStrokes.push({ points: this.activeStroke, startedAt: this.activeStroke[0]?.timestamp, endedAt: now });
+    const points = normalizeDrawingStroke(this.activeStroke, this.drawingTool);
+    this.gestureStrokes.push({ points, startedAt: points[0]?.timestamp, endedAt: now });
     this.activeStroke = [];
 
     const match = recognizeAnySpell(this.gestureStrokes, Math.min(this.scale.width, this.scale.height));
@@ -443,7 +463,8 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private drawGesture(time: number) {
-    const strokes = [...this.gestureStrokes, ...(this.activeStroke.length > 1 ? [{ points: this.activeStroke }] : [])];
+    const previewPoints = this.activeStroke.length > 1 ? normalizeDrawingStroke(this.activeStroke, this.drawingTool) : this.activeStroke;
+    const strokes = [...this.gestureStrokes, ...(previewPoints.length > 1 ? [{ points: previewPoints }] : [])];
     if (!strokes.some((stroke) => stroke.points.length > 1)) return;
     const age = this.gestureFeedbackUntil > 0 ? Math.max(0, time - (this.gestureFeedbackUntil - 1100)) : 0;
     const alpha = this.gestureActive ? 1 : Phaser.Math.Clamp(1 - age / 1100, 0.2, 1);
@@ -818,6 +839,6 @@ export class ArenaScene extends Phaser.Scene {
   }
 }
 
-export function createArenaGame(parent: HTMLElement, callbacks: ArenaCallbacks, spellId: SpellId = "ember-lance") {
-  return new Phaser.Game({ type: Phaser.AUTO, parent, backgroundColor: "#090d24", scene: new ArenaScene(callbacks, spellId), scale: { mode: Phaser.Scale.RESIZE, width: window.innerWidth, height: window.innerHeight }, render: { antialias: true, pixelArt: false } });
+export function createArenaGame(parent: HTMLElement, callbacks: ArenaCallbacks, spellId: SpellId = "ember-lance", drawingToolState: DrawingToolState = { value: DEFAULT_DRAWING_TOOL }) {
+  return new Phaser.Game({ type: Phaser.AUTO, parent, backgroundColor: "#090d24", scene: new ArenaScene(callbacks, spellId, drawingToolState), scale: { mode: Phaser.Scale.RESIZE, width: window.innerWidth, height: window.innerHeight }, render: { antialias: true, pixelArt: false } });
 }

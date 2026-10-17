@@ -5,9 +5,16 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import PhaserArena from "@/components/PhaserArena";
 import type { ArenaGameState, EnemyActivity, GestureFeedback } from "@/game/ArenaScene";
+import { DEFAULT_DRAWING_TOOL, type DrawingTool } from "@/game/drawingTool";
 import { getSpell, isSpellId, type SpellId } from "@/game/spellData";
 
 const MAX_MANA = 100;
+const DRAWING_TOOLS: readonly { id: DrawingTool; label: string; icon: string }[] = [
+  { id: "freehand", label: "FREEHAND", icon: "∿" },
+  { id: "circle", label: "CIRCLE", icon: "○" },
+  { id: "square", label: "SQUARE", icon: "□" },
+  { id: "line", label: "LINE", icon: "╱" },
+];
 
 export default function ArenaShell() {
   const searchParams = useSearchParams();
@@ -22,18 +29,30 @@ export default function ArenaShell() {
   const [gameState, setGameState] = useState<ArenaGameState>("playing");
   const [cooldown, setCooldown] = useState(0);
   const [phase, setPhase] = useState<"ready" | "charging" | "flying" | "impact">("ready");
+  const [drawingTool, setDrawingTool] = useState<DrawingTool>(DEFAULT_DRAWING_TOOL);
   const [gesture, setGesture] = useState<GestureFeedback>({ status: "idle", message: `DRAW ${spell.name} RUNE`, hint: spell.gesture.hint });
   const phaseLabel = phase === "ready" ? "READY TO CAST" : phase === "charging" ? "WEAVING SPELL" : phase === "flying" ? "SPELL IN FLIGHT" : "DIRECT HIT";
 
   return (
     <main className="arena-shell">
-      <PhaserArena spellId={initialSpellId} onManaChange={setMana} onTargetHealthChange={setHealth} onPlayerHealthChange={setPlayerHealth} onEnemyActivityChange={setEnemyActivity} onGameStateChange={setGameState} onCooldownChange={setCooldown} onPhaseChange={setPhase} onGestureChange={setGesture} onSpellChange={setSpellId} />
+      <PhaserArena spellId={initialSpellId} drawingTool={drawingTool} onManaChange={setMana} onTargetHealthChange={setHealth} onPlayerHealthChange={setPlayerHealth} onEnemyActivityChange={setEnemyActivity} onGameStateChange={setGameState} onCooldownChange={setCooldown} onPhaseChange={setPhase} onGestureChange={setGesture} onSpellChange={setSpellId} />
       <div className="vignette" />
       <header className="hud top-hud">
         <div className="brand-lockup"><div className="brand-mark">✦</div><div><p className="eyebrow">THE ARCANE CIRCUIT</p><h1>WIZARD ARENA</h1></div></div>
         <div className="round-status"><span className="status-dot" /><span>TRIAL 01</span><i /><span>{spell.school}</span><i /><span>WARDEN {enemyActivity.toUpperCase()}</span></div>
         <div className="top-actions"><span className="mouse-hint">MOUSE</span><span>DRAW RUNE</span><Link className="spellbook-nav" href="/spells">SPELLBOOK ↗</Link></div>
       </header>
+      <nav className="drawing-toolbar" aria-label="Rune drawing tool">
+        <span className="drawing-toolbar-label">DRAWING TOOL</span>
+        <div className="drawing-tool-list">
+          {DRAWING_TOOLS.map((tool) => (
+            <button className="drawing-tool" type="button" key={tool.id} aria-pressed={drawingTool === tool.id} onClick={() => setDrawingTool(tool.id)} title={`Use ${tool.label.toLowerCase()} tool`}>
+              <span className="drawing-tool-icon" aria-hidden="true">{tool.icon}</span>
+              <span>{tool.label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
       <section className="hud encounter-card"><p className="eyebrow">CURRENT ENCOUNTER</p><h2>THE ASHEN WARDEN</h2><div className="encounter-rule"><span style={{ width: `${health}%` }} /></div><div className="encounter-meta"><span>WARDEN CORE</span><strong>{health}%</strong></div></section>
       <div className="target-name"><span className="target-chevron">◆</span><span>ASHEN WARDEN</span><small>LOCAL OPPONENT · {enemyActivity.toUpperCase()}</small></div>
       <section className="hud spell-panel"><div className={`spell-icon spell-icon-${spell.id}`}>{spell.id === "freeze" ? <span className="freeze-symbol" aria-label={spell.symbol}><i /><i /></span> : <span>{spell.symbol}</span>}</div><div className="spell-copy"><p className="eyebrow">EQUIPPED SPELL</p><h2>{spell.name}</h2><p className="spell-description">{spell.description}</p></div><div className="spell-cost"><strong>{spell.manaCost}</strong><span>MANA</span></div><div className={`gesture-status gesture-${gesture.status}`} aria-live="polite"><strong>{gesture.message}</strong><span>{gesture.hint}</span>{phase !== "ready" && <small>{phaseLabel} · {cooldown.toFixed(1)}s</small>}</div></section>
