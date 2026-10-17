@@ -1,10 +1,20 @@
 import Phaser from "phaser";
+import { EMBER_LANCE_RUNE_HINT, recognizeEmberLanceRune, type RunePoint } from "@/game/runeGesture";
+
+export type GestureStatus = "idle" | "drawing" | "recognized" | "failed";
+
+export type GestureFeedback = {
+  status: GestureStatus;
+  message: string;
+  hint: string;
+};
 
 export type ArenaCallbacks = {
   onManaChange: (mana: number) => void;
   onTargetHealthChange: (health: number) => void;
   onCooldownChange: (seconds: number) => void;
   onPhaseChange: (phase: "ready" | "charging" | "flying" | "impact") => void;
+  onGestureChange: (feedback: GestureFeedback) => void;
 };
 
 const MAX_MANA = 100;
@@ -12,6 +22,7 @@ const SPELL_COST = 25;
 const MAX_HEALTH = 100;
 const COOLDOWN = 2.4;
 type Point = { x: number; y: number };
+const INITIAL_GESTURE: GestureFeedback = { status: "idle", message: "DRAW EMBER LANCE RUNE", hint: EMBER_LANCE_RUNE_HINT };
 
 export class ArenaScene extends Phaser.Scene {
   private callbacks: ArenaCallbacks;
@@ -22,6 +33,10 @@ export class ArenaScene extends Phaser.Scene {
   private targetHealth = MAX_HEALTH;
   private lastUiUpdate = -1;
   private art!: Phaser.GameObjects.Graphics;
+  private gesturePoints: RunePoint[] = [];
+  private gestureActive = false;
+  private gestureFeedback = INITIAL_GESTURE;
+  private gestureFeedbackUntil = 0;
 
   constructor(callbacks: ArenaCallbacks) {
     super({ key: "WizardArena" });
@@ -30,18 +45,26 @@ export class ArenaScene extends Phaser.Scene {
 
   create() {
     this.art = this.add.graphics();
-    this.input.on("pointerdown", () => this.castFireball());
-    this.input.keyboard?.on("keydown-SPACE", () => this.castFireball());
+    this.input.on("pointerdown", this.handlePointerDown, this);
+    this.input.on("pointermove", this.handlePointerMove, this);
+    this.input.on("pointerup", this.handlePointerUp, this);
+    this.input.on("pointerupoutside", this.handlePointerUp, this);
     this.scale.on("resize", () => this.drawArena(0));
     this.callbacks.onPhaseChange("ready");
     this.callbacks.onManaChange(this.mana);
     this.callbacks.onTargetHealthChange(this.targetHealth);
+    this.callbacks.onGestureChange(INITIAL_GESTURE);
     this.drawArena(0);
   }
 
   update(time: number, delta: number) {
     const dt = delta / 1000;
     if (this.phase === "ready" && this.mana < MAX_MANA) this.mana = Math.min(MAX_MANA, this.mana + dt * 5);
+    if (!this.gestureActive && this.gestureFeedbackUntil > 0 && time >= this.gestureFeedbackUntil) {
+      this.gestureFeedbackUntil = 0;
+      this.gesturePoints = [];
+      this.setGestureFeedback(INITIAL_GESTURE);
+    }
     const cooldown = Math.max(0, (this.cooldownUntil - time) / 1000);
     if (Math.abs(cooldown - this.lastUiUpdate) > 0.03 || cooldown === 0) {
       this.lastUiUpdate = cooldown;
@@ -59,12 +82,56 @@ export class ArenaScene extends Phaser.Scene {
     this.drawArena(time);
   }
 
-  castFireball() {
+  private handlePointerDown(pointer: Phaser.Input.Pointer) {
+    if (pointer.wasTouch || pointer.button !== 0 || this.gestureActive) return;
+    this.gestureActive = true;
+    this.gesturePoints = [{ x: pointer.worldX, y: pointer.worldY }];
+    this.gestureFeedbackUntil = 0;
+    this.setGestureFeedback({ status: "drawing", message: "TRACING RUNE…", hint: "KEEP HOLDING · DOWN THEN UP-RIGHT" });
+  }
+
+  private handlePointerMove(pointer: Phaser.Input.Pointer) {
+    if (!this.gestureActive || !pointer.leftButtonDown() || pointer.wasTouch) return;
+    const next = { x: pointer.worldX, y: pointer.worldY };
+    const previous = this.gesturePoints[this.gesturePoints.length - 1];
+    if (!previous || Phaser.Math.Distance.Between(previous.x, previous.y, next.x, next.y) >= 4) this.gesturePoints.push(next);
+  }
+
+  private handlePointerUp(pointer: Phaser.Input.Pointer) {
+    if (!this.gestureActive || pointer.wasTouch) return;
+    this.gestureActive = false;
+    const finalPoint = { x: pointer.worldX, y: pointer.worldY };
+    const previous = this.gesturePoints[this.gesturePoints.length - 1];
+    if (!previous || Phaser.Math.Distance.Between(previous.x, previous.y, finalPoint.x, finalPoint.y) >= 2) this.gesturePoints.push(finalPoint);
+
+    const recognition = recognizeEmberLanceRune(this.gesturePoints, Math.min(this.scale.width, this.scale.height));
+    if (!recognition.recognized) {
+      const hint = recognition.reason === "too-short" ? "DRAW A LONGER RUNE" : recognition.reason === "downward-stroke" ? "START WITH A STRAIGHT DOWNWARD STROKE" : "FINISH WITH AN UP-RIGHT DIAGONAL HOOK";
+      this.showGestureFeedback({ status: "failed", message: "RUNE NOT RECOGNIZED", hint });
+      return;
+    }
+
+    if (this.castEmberLance()) this.showGestureFeedback({ status: "recognized", message: "RUNE ACCEPTED", hint: "EMBER LANCE RELEASED" });
+    else this.showGestureFeedback({ status: "failed", message: "RUNE CANNOT FIRE YET", hint: this.mana < SPELL_COST ? "WAIT FOR MANA" : "WAIT FOR THE CURRENT CAST TO FINISH" });
+  }
+
+  private setGestureFeedback(feedback: GestureFeedback) {
+    this.gestureFeedback = feedback;
+    this.callbacks.onGestureChange(feedback);
+  }
+
+  private showGestureFeedback(feedback: GestureFeedback) {
+    this.gestureFeedbackUntil = (this.game.loop?.time ?? 0) + 1100;
+    this.setGestureFeedback(feedback);
+  }
+
+  private castEmberLance() {
     const now = this.game.loop?.time ?? 0;
-    if (this.phase !== "ready" || now < this.cooldownUntil || this.mana < SPELL_COST) return;
+    if (this.phase !== "ready" || now < this.cooldownUntil || this.mana < SPELL_COST) return false;
     this.mana -= SPELL_COST; this.cooldownUntil = now + COOLDOWN * 1000;
     this.phase = "charging"; this.phaseStarted = now;
     this.callbacks.onManaChange(this.mana); this.callbacks.onCooldownChange(COOLDOWN); this.callbacks.onPhaseChange("charging");
+    return true;
   }
 
   private drawArena(time: number) {
@@ -74,7 +141,26 @@ export class ArenaScene extends Phaser.Scene {
     const hitT = this.phase === "impact" ? Phaser.Math.Clamp((time - this.phaseStarted) / 720, 0, 1) : 0;
     const target: Point = { x: targetBase.x + (this.phase === "impact" ? Math.sin(hitT * Math.PI * 8) * (1 - hitT) * 10 : 0), y: targetBase.y };
     this.art.clear(); this.drawBackdrop(width, height, t); this.drawArenaFloor(width, height, t);
-    this.drawWizard(wizard, t); this.drawTarget(target, t, hitT); this.drawSpell(wizard, target, time, t);
+    this.drawWizard(wizard, t); this.drawTarget(target, t, hitT); this.drawSpell(wizard, target, time, t); this.drawGesture(time);
+  }
+
+  private drawGesture(time: number) {
+    if (this.gesturePoints.length < 2) return;
+    const age = this.gestureFeedbackUntil > 0 ? Math.max(0, time - (this.gestureFeedbackUntil - 1100)) : 0;
+    const alpha = this.gestureActive ? 1 : Phaser.Math.Clamp(1 - age / 1100, 0.2, 1);
+    const color = this.gestureFeedback.status === "failed" ? 0xff784e : this.gestureFeedback.status === "recognized" ? 0xffd166 : 0x72e6d3;
+    const drawPath = () => {
+      this.art.beginPath();
+      this.art.moveTo(this.gesturePoints[0].x, this.gesturePoints[0].y);
+      this.gesturePoints.slice(1).forEach((point) => this.art.lineTo(point.x, point.y));
+      this.art.strokePath();
+    };
+    this.art.lineStyle(18, color, 0.08 * alpha); drawPath();
+    this.art.lineStyle(8, color, 0.2 * alpha); drawPath();
+    this.art.lineStyle(3, 0xf6fff3, 0.95 * alpha); drawPath();
+    const tip = this.gesturePoints[this.gesturePoints.length - 1];
+    this.art.fillStyle(color, 0.25 * alpha); this.art.fillCircle(tip.x, tip.y, 12);
+    this.art.fillStyle(0xf6fff3, 0.9 * alpha); this.art.fillCircle(tip.x, tip.y, 3);
   }
 
   private drawBackdrop(width: number, height: number, t: number) {

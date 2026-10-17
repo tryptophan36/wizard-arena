@@ -7,8 +7,12 @@ training target, and the Ember Lance spell.
 
 ## First playable slice
 
-- Press `Space` or click the `CAST` button to launch Ember Lance.
-- Click anywhere in the arena to quick-cast.
+- Hold the left mouse button and draw the Ember Lance rune: a downward stroke
+  followed by an up-right diagonal hook.
+- Open `/spells` or choose `SPELLBOOK` in the arena header to study the rune
+  diagram and drawing order before entering the duel.
+- The stroke must be long enough to pass recognition before Ember Lance launches;
+  a short or malformed rune shows a failure hint and does not spend mana.
 - Watch the cast charge, projectile trail, impact burst, target recoil, mana
   cost, and cooldown feedback.
 - Repeat the cast until the training target's health reaches zero.
