@@ -19,6 +19,7 @@ export type GestureFeedback = {
 
 export type ArenaGameState = "playing" | "victory" | "defeat";
 export type EnemyActivity = "waiting" | "charging" | "flying" | "impact" | "stunned" | "frozen";
+export type ArenaMode = "duel" | "practice";
 
 export type ArenaCallbacks = {
   onManaChange: (mana: number) => void;
@@ -53,6 +54,7 @@ function getFreezeDuration(spell: SpellData) {
 export class ArenaScene extends Phaser.Scene {
   private callbacks: ArenaCallbacks;
   private spell: SpellData;
+  private mode: ArenaMode;
   private phase: "ready" | "charging" | "flying" | "impact" = "ready";
   private phaseStarted = 0;
   private cooldownUntil = 0;
@@ -97,11 +99,12 @@ export class ArenaScene extends Phaser.Scene {
   private nextEnemyDecisionAt: number = OPPONENT_AI_CONFIG.openingDelayMs;
   private enemyActivity: EnemyActivity = "waiting";
 
-  constructor(callbacks: ArenaCallbacks, spellId: SpellId = "ember-lance", drawingToolState: DrawingToolState = { value: DEFAULT_DRAWING_TOOL }) {
+  constructor(callbacks: ArenaCallbacks, spellId: SpellId = "ember-lance", drawingToolState: DrawingToolState = { value: DEFAULT_DRAWING_TOOL }, mode: ArenaMode = "duel") {
     super({ key: "WizardArena" });
     this.callbacks = callbacks;
     this.spell = getSpell(spellId);
     this.drawingToolState = drawingToolState;
+    this.mode = mode;
   }
 
   public setDrawingTool(tool: DrawingTool) {
@@ -218,8 +221,8 @@ export class ArenaScene extends Phaser.Scene {
       this.drawArena(time);
       return;
     }
-    if (this.phase === "ready" && this.mana < MAX_MANA) this.mana = Math.min(MAX_MANA, this.mana + dt * MANA_REGEN_PER_SECOND);
-    if (this.enemyPhase === "ready" && this.enemyMana < MAX_MANA) this.enemyMana = Math.min(MAX_MANA, this.enemyMana + dt * MANA_REGEN_PER_SECOND);
+    if (this.mode === "duel" && this.phase === "ready" && this.mana < MAX_MANA) this.mana = Math.min(MAX_MANA, this.mana + dt * MANA_REGEN_PER_SECOND);
+    if (this.mode === "duel" && this.enemyPhase === "ready" && this.enemyMana < MAX_MANA) this.enemyMana = Math.min(MAX_MANA, this.enemyMana + dt * MANA_REGEN_PER_SECOND);
     if (this.shieldActive && time >= this.shieldUntil) this.shieldActive = false;
     if (this.enemyShieldActive && time >= this.enemyShieldUntil) {
       this.enemyShieldActive = false;
@@ -255,7 +258,7 @@ export class ArenaScene extends Phaser.Scene {
       this.phase = "flying"; this.phaseStarted = time; this.callbacks.onPhaseChange("flying");
     } else if (this.phase === "flying" && time - this.phaseStarted > activeSpell.timings.flying) {
       this.phase = "impact"; this.phaseStarted = time;
-      if (activeSpell.kind === "offensive") {
+      if (this.mode === "duel" && activeSpell.kind === "offensive") {
         if (this.enemyShieldActive) {
           this.enemyShieldActive = false;
           this.enemyShieldBlockedUntil = time + 440;
@@ -267,11 +270,11 @@ export class ArenaScene extends Phaser.Scene {
         }
       }
       this.callbacks.onTargetHealthChange(this.targetHealth); this.callbacks.onPhaseChange("impact");
-      if (this.targetHealth <= 0) this.finishGame("victory");
+      if (this.mode === "duel" && this.targetHealth <= 0) this.finishGame("victory");
     } else if (this.phase === "impact" && time - this.phaseStarted > activeSpell.timings.impact) {
       this.phase = "ready"; this.projectileSpell = null; this.callbacks.onPhaseChange("ready");
     }
-    if (this.gameState === "playing") this.updateOpponent(time);
+    if (this.mode === "duel" && this.gameState === "playing") this.updateOpponent(time);
     this.drawArena(time);
   }
 
@@ -391,7 +394,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private finishGame(state: Exclude<ArenaGameState, "playing">) {
-    if (this.gameState !== "playing") return;
+    if (this.mode === "practice" || this.gameState !== "playing") return;
     this.gameState = state;
     this.clearGestureInput();
     this.gestureFeedbackUntil = 0;
@@ -488,21 +491,28 @@ export class ArenaScene extends Phaser.Scene {
 
   private castSpell() {
     const now = this.game.loop?.time ?? 0;
-    if (now < this.playerFrozenUntil) return false;
+    const isPractice = this.mode === "practice";
+    if (!isPractice && now < this.playerFrozenUntil) return false;
     const isShield = this.spell.kind === "defensive";
     const canCastShield = isShield && (this.phase === "ready" || this.phase === "flying");
-    if ((!isShield && this.phase !== "ready") || (isShield && !canCastShield) || now < this.cooldownUntil || this.mana < this.spell.manaCost) return false;
-    this.mana -= this.spell.manaCost; this.cooldownUntil = now + this.spell.cooldown * 1000;
+    if ((!isShield && this.phase !== "ready") || (isShield && !canCastShield) || (!isPractice && now < this.cooldownUntil) || (!isPractice && this.mana < this.spell.manaCost)) return false;
+    if (isPractice) {
+      this.mana = MAX_MANA;
+      this.cooldownUntil = 0;
+    } else {
+      this.mana -= this.spell.manaCost;
+      this.cooldownUntil = now + this.spell.cooldown * 1000;
+    }
     if (isShield) {
       this.shieldActive = true;
       this.shieldUntil = now + (this.spell.shieldDurationMs ?? 1600);
       this.shieldBlockedUntil = 0;
-      this.callbacks.onManaChange(this.mana); this.callbacks.onCooldownChange(this.spell.cooldown);
+      this.callbacks.onManaChange(this.mana); this.callbacks.onCooldownChange(isPractice ? 0 : this.spell.cooldown);
       return true;
     }
     this.projectileSpell = this.spell;
     this.phase = "charging"; this.phaseStarted = now;
-    this.callbacks.onManaChange(this.mana); this.callbacks.onCooldownChange(this.spell.cooldown); this.callbacks.onPhaseChange("charging");
+    this.callbacks.onManaChange(this.mana); this.callbacks.onCooldownChange(isPractice ? 0 : this.spell.cooldown); this.callbacks.onPhaseChange("charging");
     return true;
   }
 
@@ -638,7 +648,7 @@ export class ArenaScene extends Phaser.Scene {
     this.enemyFreezeRings.setVisible(false);
     if (!activeSpell || this.enemyPhase === "ready") {
       this.enemyEmberLance.setVisible(false);
-      this.lightningBolt.setVisible(false);
+      if (this.projectileSpell?.visualKind !== "lightning") this.lightningBolt.setVisible(false);
       return;
     }
     if (activeSpell.visualKind === "lightning") {
@@ -894,6 +904,6 @@ export class ArenaScene extends Phaser.Scene {
   }
 }
 
-export function createArenaGame(parent: HTMLElement, callbacks: ArenaCallbacks, spellId: SpellId = "ember-lance", drawingToolState: DrawingToolState = { value: DEFAULT_DRAWING_TOOL }) {
-  return new Phaser.Game({ type: Phaser.AUTO, parent, backgroundColor: "#090d24", scene: new ArenaScene(callbacks, spellId, drawingToolState), scale: { mode: Phaser.Scale.RESIZE, width: window.innerWidth, height: window.innerHeight }, render: { antialias: true, pixelArt: false } });
+export function createArenaGame(parent: HTMLElement, callbacks: ArenaCallbacks, spellId: SpellId = "ember-lance", drawingToolState: DrawingToolState = { value: DEFAULT_DRAWING_TOOL }, mode: ArenaMode = "duel") {
+  return new Phaser.Game({ type: Phaser.AUTO, parent, backgroundColor: "#090d24", scene: new ArenaScene(callbacks, spellId, drawingToolState, mode), scale: { mode: Phaser.Scale.RESIZE, width: window.innerWidth, height: window.innerHeight }, render: { antialias: true, pixelArt: false } });
 }

@@ -2,13 +2,14 @@
 
 Wizard Arena is a Next.js browser-game project where players cast spells as
 wizards and defeat intelligent computer opponents. The current game flow has
-a home menu, a computer duel, a spell book, four drawable spells, and a
-victory/defeat loop.
+a home menu, a computer duel, a free-cast practice range, a spell book, four
+drawable spells, and a victory/defeat loop for duels.
 
 ## Game flow
 
-- `/` — home menu with `START GAME`, `COMPUTER`, `MULTIPLAYER` (not implemented), and `SPELL BOOK`.
+- `/` — home menu with `COMPUTER`, `PRACTICE`, `SPELL BOOK`, and `MULTIPLAYER` (not implemented).
 - `/arena` — local computer duel against the Ashen Warden.
+- `/practice` — free-cast practice range with a passive target; every registered spell can be drawn and released with `A` without mana or cooldown limits.
 - `/spells` — learn every currently available rune before entering the arena.
 
 The computer opponent evaluates its mana, cooldown, health, projectile state,
@@ -44,6 +45,7 @@ or multiplayer implementation yet.
   Aegis and react. Watch the cast charge, trail, impact burst, target recoil,
   mana cost, and cooldown feedback for the selected spell.
 - Repeat the cast until the training target's health reaches zero.
+- Choose `PRACTICE` from the home menu to enter a passive free-cast range. Draw any registered rune and press `A` to replay its normal cast animation without opponent attacks, duel end states, mana costs, or cooldown waits.
 
 The scene uses original procedural Phaser artwork rather than external game
 assets, so the prototype can be rebuilt and run without a separate asset

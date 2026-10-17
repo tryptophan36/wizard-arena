@@ -54,13 +54,23 @@ export default function HomeMenu() {
               <p className="eyebrow">CHOOSE YOUR PATH</p>
               <h3>START GAME</h3>
             </div>
-            <span className="home-panel-index">01 <i /> 02</span>
+            <span className="home-panel-index">01 <i /> 04</span>
           </div>
 
           <div className="game-mode-list" aria-label="Game modes">
             <Link className="game-mode game-mode-active" href="/arena">
               <span className="game-mode-symbol" aria-hidden="true">↗</span>
               <span className="game-mode-copy"><strong>COMPUTER</strong><small>DUEL THE ASHEN WARDEN</small></span>
+              <span className="game-mode-arrow" aria-hidden="true">→</span>
+            </Link>
+            <Link className="game-mode game-mode-active game-mode-practice" href="/practice">
+              <span className="game-mode-symbol" aria-hidden="true">∞</span>
+              <span className="game-mode-copy"><strong>PRACTICE</strong><small>FREE-CAST EVERY REGISTERED SPELL</small></span>
+              <span className="game-mode-arrow" aria-hidden="true">→</span>
+            </Link>
+            <Link className="game-mode game-mode-active game-mode-spellbook" href="/spells">
+              <span className="game-mode-symbol" aria-hidden="true">✧</span>
+              <span className="game-mode-copy"><strong>SPELL BOOK</strong><small>STUDY THE REGISTERED RUNES</small></span>
               <span className="game-mode-arrow" aria-hidden="true">→</span>
             </Link>
             <button className="game-mode game-mode-disabled" type="button" disabled>
@@ -71,17 +81,14 @@ export default function HomeMenu() {
           </div>
 
           <div className="home-panel-footer">
-            <span><span className="status-dot" /> COMPUTER TRIAL READY</span>
+            <span><span className="status-dot" /> CIRCUIT READY</span>
             <span>DRAW TO CAST</span>
           </div>
         </div>
       </section>
 
       <footer className="home-footer">
-        <Link className="home-spellbook-link" href="/spells">
-          <span className="home-spellbook-icon" aria-hidden="true">✧</span>
-          <span><small>STUDY YOUR CRAFT</small><strong>SPELL BOOK <b aria-hidden="true">↗</b></strong></span>
-        </Link>
+        <div className="home-footer-note"><span className="status-dot" /> SPELL BOOK AVAILABLE IN YOUR PATHS</div>
         <div className="home-footer-meta"><span>LYRA VELL</span><i /><span>EMBER SANCTUM</span><i /><span>BUILD 01.03</span></div>
       </footer>
     </main>
