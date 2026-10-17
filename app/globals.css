@@ -197,12 +197,12 @@ button { font: inherit; }
 .spell-card-symbol { display: grid; flex: 0 0 auto; place-items: center; width: 58px; height: 68px; border: 1px solid rgba(244,191,104,.62); color: var(--gold); font-size: 32px; text-shadow: 0 0 18px rgba(244,191,104,.6); }
 .spell-card-lightning .spell-card-symbol { border-color: rgba(143,234,255,.72); color: var(--electric); text-shadow: 0 0 18px rgba(143,234,255,.8); }
 .spell-card-aegis .spell-card-symbol { border-color: rgba(143,234,255,.72); color: var(--electric); text-shadow: 0 0 18px rgba(143,234,255,.8); }
-.spell-card-freeze .spell-card-symbol { border-color: rgba(143,234,255,.72); color: var(--electric); text-shadow: 0 0 18px rgba(143,234,255,.8); }
+.spell-card-freeze .spell-card-symbol { overflow: hidden; padding: 2px; border-color: rgba(143,234,255,.72); background: radial-gradient(circle, rgba(115,135,255,.22), rgba(22,28,67,.3) 68%); }
+.spell-card-symbol-image { display: block; width: 56px; height: 64px; object-fit: contain; }
 .freeze-symbol { position: relative; display: block; width: 31px; height: 31px; }
 .freeze-symbol i { position: absolute; top: 50%; left: 50%; display: block; aspect-ratio: 1; border: 2px solid currentColor; border-radius: 50%; transform: translate(-50%, -50%); box-shadow: 0 0 9px currentColor; }
 .freeze-symbol i:nth-child(1) { width: 31px; opacity: .62; }
-.freeze-symbol i:nth-child(2) { width: 21px; opacity: .82; }
-.freeze-symbol i:nth-child(3) { width: 11px; opacity: 1; }
+.freeze-symbol i:nth-child(2) { width: 19px; opacity: .95; }
 .spell-icon-freeze { color: var(--electric); border-color: rgba(143,234,255,.72); background: radial-gradient(circle, rgba(115,135,255,.3), rgba(22,28,67,.3) 68%); }
 .spell-card-heading h3 { margin: 5px 0 5px; color: var(--cream); font-size: 21px; letter-spacing: .12em; }
 .spell-card-heading p:not(.eyebrow) { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
@@ -229,7 +229,6 @@ button { font: inherit; }
 .mini-rune-freeze i { position: absolute; top: 50%; left: 50%; display: block; aspect-ratio: 1; border: 3px solid var(--electric); border-radius: 50%; transform: translate(-50%, -50%); }
 .mini-rune-freeze i:nth-child(1) { width: 62px; opacity: .55; }
 .mini-rune-freeze i:nth-child(2) { width: 43px; opacity: .76; }
-.mini-rune-freeze i:nth-child(3) { width: 24px; opacity: 1; }
 .spell-card-rune strong { display: block; margin-top: 7px; color: var(--cream); font-size: 10px; letter-spacing: .12em; }
 .spell-card-rune p { max-width: 260px; margin: 6px 0 0; color: var(--muted); font-size: 9px; line-height: 1.45; }
 .spell-card-effect { margin: 0 20px; padding: 13px; border-left: 2px solid var(--orange); background: rgba(255,120,78,.08); }

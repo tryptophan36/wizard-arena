@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { SPELLS } from "@/game/spellData";
 
 export default function SpellsPage() {
@@ -40,7 +41,9 @@ export default function SpellsPage() {
               <span className="rune-state"><span className="status-dot" /> {spell.difficulty}</span>
             </div>
             <div className="spell-card-heading">
-              <div className={`spell-card-symbol ${spell.id === "freeze" ? "spell-card-symbol-freeze" : ""}`} aria-hidden="true">{spell.id === "freeze" ? <span className="freeze-symbol"><i /><i /><i /></span> : spell.symbol}</div>
+              <div className="spell-card-symbol">
+                {spell.id === "freeze" ? <Image className="spell-card-symbol-image" src="/assets/freeze.svg" width={320} height={320} alt="Frozen target encased in a crystalline ice shell" /> : <span aria-hidden="true">{spell.symbol}</span>}
+              </div>
               <div>
                 <p className="eyebrow">{spell.school}</p>
                 <h3>{spell.name}</h3>
@@ -54,7 +57,7 @@ export default function SpellsPage() {
             </div>
             <div className="spell-card-rune">
               <div className="mini-rune" aria-hidden="true">
-                {spell.id === "aegis" ? <span className="mini-rune-square" /> : spell.id === "freeze" ? <span className="mini-rune-freeze"><i /><i /><i /></span> : <><span className="mini-rune-line" /><span className="mini-rune-turn" />{spell.id === "lightning" && <span className="mini-rune-strike" />}</>}
+                {spell.id === "aegis" ? <span className="mini-rune-square" /> : spell.id === "freeze" ? <span className="mini-rune-freeze"><i /><i /></span> : <><span className="mini-rune-line" /><span className="mini-rune-turn" />{spell.id === "lightning" && <span className="mini-rune-strike" />}</>}
               </div>
               <div>
                 <span className="detail-label">GESTURE</span>

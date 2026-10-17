@@ -1,4 +1,4 @@
-export type FreezeLayerRole = "glow" | "ring" | "core" | "spark";
+export type FreezeLayerRole = "glow" | "ring" | "shell" | "core" | "spark";
 
 export type FreezeLayer = {
   readonly id: string;
@@ -10,8 +10,8 @@ export type FreezeLayer = {
 export const FREEZE_LAYERS = [
   { id: "glow", svgGroupId: "freeze-glow", depth: 0, role: "glow" },
   { id: "outer-ring", svgGroupId: "freeze-outer-ring", depth: 1, role: "ring" },
-  { id: "middle-ring", svgGroupId: "freeze-middle-ring", depth: 2, role: "ring" },
-  { id: "inner-ring", svgGroupId: "freeze-inner-ring", depth: 3, role: "ring" },
+  { id: "inner-ring", svgGroupId: "freeze-inner-ring", depth: 2, role: "ring" },
+  { id: "ice-shell", svgGroupId: "freeze-ice-shell", depth: 3, role: "shell" },
   { id: "core", svgGroupId: "freeze-core", depth: 4, role: "core" },
   { id: "shards", svgGroupId: "freeze-shards", depth: 5, role: "spark" },
 ] as const satisfies readonly FreezeLayer[];

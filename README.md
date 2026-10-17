@@ -26,7 +26,7 @@ or multiplayer implementation yet.
   costs 35 mana, deals 20 damage, and briefly stuns the computer on hit.
 - Draw Aegis as one closed square while a projectile is travelling to raise a
   ward and absorb that impact; do not add the former crossing diagonals.
-- Draw Freeze as three nearby, concentric closed circles, one circle per stroke;
+- Draw Freeze as two nearby, concentric closed circles, one circle per stroke;
   it costs 60 mana, deals no damage, and freezes the target for 2.5 seconds.
   An active Aegis ward consumes itself and reduces that freeze to 1 second.
 - Select `LEARN IN ARENA` on a spell card to equip it with the matching symbol

@@ -11,7 +11,7 @@ import {
   type RuneStroke,
 } from "@/game/recognition/shared";
 
-export const FREEZE_RUNE_HINT = "STROKE 1: OUTER CIRCLE · STROKE 2: MIDDLE CIRCLE · STROKE 3: INNER CIRCLE";
+export const FREEZE_RUNE_HINT = "STROKE 1: OUTER CIRCLE · STROKE 2: INNER CIRCLE";
 
 const FULL_TURN = Math.PI * 2;
 const CIRCLE_HINT = "EACH STROKE MUST BE ONE CLOSED CIRCLE";
@@ -112,15 +112,15 @@ function makeFreezeRecognition(
   pauseMs?: number,
   gapDistance?: number,
 ) {
-  return makeRecognition(strokes, minimumLength, minimumStrokeLengths, values, pauseMs, gapDistance, 3);
+  return makeRecognition(strokes, minimumLength, minimumStrokeLengths, values, pauseMs, gapDistance, 2);
 }
 
-/** Recognize exactly three nearby, closed circular strokes with a shared center. */
+/** Recognize exactly two nearby, closed circular strokes with a shared center. */
 export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: number): RuneRecognition {
   const dimension = Math.max(1, arenaDimension);
   const minimumLength = Math.max(180, dimension * 0.2);
   const minimumStrokeLength = Math.max(58, dimension * 0.055);
-  const minimumStrokeLengths = [minimumStrokeLength, minimumStrokeLength, minimumStrokeLength];
+  const minimumStrokeLengths = [minimumStrokeLength, minimumStrokeLength];
   const positionTolerance = Math.max(36, dimension * 0.1);
   const centerTolerance = Math.max(24, dimension * 0.065);
 
@@ -134,13 +134,13 @@ export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: nu
     });
   }
 
-  if (strokes.length > 3) {
+  if (strokes.length > 2) {
     return makeFreezeRecognition(strokes, minimumLength, minimumStrokeLengths, {
       recognized: false,
       stage: "failed",
       progress: 0.9,
       reason: "stroke-count",
-      hint: "FREEZE USES EXACTLY THREE CIRCLES",
+      hint: "FREEZE USES EXACTLY TWO CIRCLES",
     });
   }
 
@@ -152,7 +152,7 @@ export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: nu
       return makeFreezeRecognition(strokes, minimumLength, minimumStrokeLengths, {
         recognized: false,
         stage: index === 0 ? "first-stroke" : "second-stroke",
-        progress: clampProgress(index / 3 + 0.18),
+        progress: clampProgress(index / 2 + 0.18),
         reason: "circle-shape",
         hint: CIRCLE_HINT,
       });
@@ -170,7 +170,7 @@ export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: nu
         return makeFreezeRecognition(strokes, minimumLength, minimumStrokeLengths, {
           recognized: false,
           stage: "failed",
-          progress: index / 3,
+          progress: index / 2,
           reason: pauseMs < 0 ? "stroke-order" : "pause-too-long",
           hint: pauseMs < 0 ? "FINISH EACH CIRCLE IN ORDER" : "KEEP THE PAUSE BETWEEN CIRCLES SHORT",
         }, pauseMs, gapDistance);
@@ -179,7 +179,7 @@ export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: nu
         return makeFreezeRecognition(strokes, minimumLength, minimumStrokeLengths, {
           recognized: false,
           stage: "failed",
-          progress: index / 3,
+          progress: index / 2,
           reason: "stroke-position",
           hint: "START EACH CIRCLE NEAR THE LAST RING",
         }, pauseMs, gapDistance);
@@ -188,13 +188,13 @@ export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: nu
     circles.push(circle);
   }
 
-  if (circles.length < 3) {
+  if (circles.length < 2) {
     return makeFreezeRecognition(strokes, minimumLength, minimumStrokeLengths, {
       recognized: false,
       stage: "awaiting-next-stroke",
-      progress: circles.length / 3,
+      progress: circles.length / 2,
       reason: "stroke-count",
-      hint: circles.length === 1 ? "ADD THE MIDDLE CLOSED CIRCLE" : "ADD THE INNER CLOSED CIRCLE",
+      hint: "ADD THE INNER CLOSED CIRCLE",
     });
   }
 
@@ -208,7 +208,7 @@ export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: nu
       stage: "failed",
       progress: 0.86,
       reason: "stroke-position",
-      hint: !centersAreConcentric ? "KEEP ALL THREE CIRCLES CONCENTRIC" : "USE THREE DISTINCT RING SIZES",
+      hint: !centersAreConcentric ? "KEEP BOTH CIRCLES CONCENTRIC" : "USE TWO DISTINCT RING SIZES",
     });
   }
 
@@ -219,7 +219,7 @@ export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: nu
       stage: "failed",
       progress: clampProgress(totalLength / minimumLength),
       reason: "too-short",
-      hint: "DRAW THREE LARGER FROST CIRCLES",
+      hint: "DRAW TWO LARGER FROST CIRCLES",
     });
   }
 
@@ -227,7 +227,7 @@ export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: nu
     recognized: true,
     stage: "complete",
     progress: 1,
-    hint: "THREE CONCENTRIC CIRCLES ACCEPTED",
+    hint: "TWO CONCENTRIC CIRCLES ACCEPTED",
   });
 }
 

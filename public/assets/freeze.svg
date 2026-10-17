@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320" fill="none">
-  <title>Freeze Rings</title>
-  <desc>Three glowing concentric ice circles with crystalline frost sparks.</desc>
+  <title>Freeze Crystal Prison</title>
+  <desc>A readable frozen target silhouette held inside two glacial rings and a faceted ice shell.</desc>
   <defs>
     <radialGradient id="freeze-aura" cx="0" cy="0" r="1" gradientTransform="translate(160 160) rotate(90) scale(142)" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#DDFBFF" stop-opacity="0.25" />
-      <stop offset="0.45" stop-color="#75E8FF" stop-opacity="0.14" />
+      <stop stop-color="#DDFBFF" stop-opacity="0.28" />
+      <stop offset="0.45" stop-color="#75E8FF" stop-opacity="0.16" />
       <stop offset="1" stop-color="#6682FF" stop-opacity="0" />
     </radialGradient>
     <linearGradient id="freeze-ring" x1="65" y1="242" x2="258" y2="73" gradientUnits="userSpaceOnUse">
@@ -13,8 +13,19 @@
       <stop offset="0.66" stop-color="#E9FFFF" />
       <stop offset="1" stop-color="#7796FF" />
     </linearGradient>
-    <linearGradient id="freeze-core" x1="114" y1="217" x2="215" y2="103" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#7E9BFF" />
+    <linearGradient id="freeze-shell" x1="74" y1="246" x2="246" y2="65" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#556BDE" stop-opacity="0.25" />
+      <stop offset="0.42" stop-color="#78E8FF" stop-opacity="0.34" />
+      <stop offset="0.72" stop-color="#EBFFFF" stop-opacity="0.5" />
+      <stop offset="1" stop-color="#718CFF" stop-opacity="0.25" />
+    </linearGradient>
+    <linearGradient id="freeze-shell-highlight" x1="100" y1="238" x2="222" y2="82" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#718BFF" />
+      <stop offset="0.45" stop-color="#9DF3FF" />
+      <stop offset="1" stop-color="#FFFFFF" />
+    </linearGradient>
+    <linearGradient id="freeze-core" x1="115" y1="219" x2="209" y2="91" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7189F5" />
       <stop offset="0.5" stop-color="#F4FFFF" />
       <stop offset="1" stop-color="#8DEBFF" />
     </linearGradient>
@@ -27,37 +38,44 @@
   </defs>
 
   <g id="freeze-glow" aria-hidden="true">
-    <circle cx="160" cy="160" r="136" fill="url(#freeze-aura)" />
-    <circle cx="160" cy="160" r="118" stroke="#73E9FF" stroke-width="18" opacity="0.32" filter="url(#freeze-soft-glow)" />
-    <circle cx="160" cy="160" r="82" stroke="#B7F7FF" stroke-width="12" opacity="0.28" filter="url(#freeze-tight-glow)" />
+    <circle cx="160" cy="160" r="140" fill="url(#freeze-aura)" />
+    <path d="M160 47L218 74L249 126L236 198L199 251L160 270L121 251L84 198L71 126L102 74L160 47Z" stroke="#73E9FF" stroke-width="18" opacity="0.25" filter="url(#freeze-soft-glow)" />
+    <path d="M160 51L215 77L244 127L231 195L196 245L160 263L124 245L89 195L76 127L105 77L160 51Z" stroke="#B7F7FF" stroke-width="6" opacity="0.3" filter="url(#freeze-tight-glow)" />
   </g>
 
   <g id="freeze-outer-ring" stroke="url(#freeze-ring)" stroke-linecap="round">
     <circle cx="160" cy="160" r="116" stroke-width="5" opacity="0.9" />
     <circle cx="160" cy="160" r="116" stroke="#F0FFFF" stroke-width="1.5" stroke-dasharray="3 13" opacity="0.92" />
   </g>
-  <g id="freeze-middle-ring" stroke="url(#freeze-ring)" stroke-linecap="round">
-    <circle cx="160" cy="160" r="79" stroke-width="5" opacity="0.96" />
-    <circle cx="160" cy="160" r="79" stroke="#E6FFFF" stroke-width="1.5" stroke-dasharray="2 10" opacity="0.88" />
-  </g>
   <g id="freeze-inner-ring" stroke="url(#freeze-ring)" stroke-linecap="round">
-    <circle cx="160" cy="160" r="43" stroke-width="5" opacity="1" />
-    <circle cx="160" cy="160" r="43" stroke="#FFFFFF" stroke-width="1.5" stroke-dasharray="2 8" opacity="0.9" />
+    <circle cx="160" cy="160" r="84" stroke-width="5" opacity="0.96" />
+    <circle cx="160" cy="160" r="84" stroke="#E6FFFF" stroke-width="1.5" stroke-dasharray="2 10" opacity="0.88" />
+  </g>
+
+  <g id="freeze-ice-shell" stroke-linejoin="round">
+    <path d="M160 49L218 74L249 126L236 198L199 251L160 270L121 251L84 198L71 126L102 74L160 49Z" fill="url(#freeze-shell)" stroke="url(#freeze-shell-highlight)" stroke-width="4" opacity="0.92" />
+    <path d="M160 49V270M102 74L121 251M218 74L199 251M71 126H249M84 198H236" stroke="#BDF7FF" stroke-width="1.5" opacity="0.55" />
+    <path d="M102 74L137 141L121 251M218 74L183 141L199 251M71 126L137 141L84 198M249 126L183 141L236 198" stroke="#7899FF" stroke-width="2" opacity="0.62" />
+    <path d="M160 49L137 141L160 270L183 141L160 49Z" fill="#A9F4FF" fill-opacity="0.08" stroke="#E5FFFF" stroke-width="1.5" opacity="0.72" />
+    <path d="M160 39L171 58L160 77L149 58L160 39ZM72 108L91 119L83 140L64 129L72 108ZM248 108L256 129L237 140L229 119L248 108ZM160 243L171 262L160 281L149 262L160 243Z" fill="url(#freeze-shell-highlight)" opacity="0.7" />
   </g>
 
   <g id="freeze-core">
-    <circle cx="160" cy="160" r="17" fill="#DDFBFF" fill-opacity="0.25" stroke="url(#freeze-core)" stroke-width="2" />
-    <path d="M160 140V180M140 160H180M146 146L174 174M174 146L146 174" stroke="#F4FFFF" stroke-width="2" stroke-linecap="round" opacity="0.9" />
-    <circle cx="160" cy="160" r="5" fill="#FFFFFF" />
+    <circle cx="160" cy="104" r="22" fill="#15265D" fill-opacity="0.88" stroke="url(#freeze-core)" stroke-width="3" />
+    <path d="M145 130V144L132 150C122 154 116 165 113 177L105 219H215L207 177C204 165 198 154 188 150L175 144V130C171 136 166 139 160 139C154 139 149 136 145 130Z" fill="#14245A" fill-opacity="0.94" stroke="url(#freeze-core)" stroke-width="3" stroke-linejoin="round" />
+    <path d="M131 157L120 190L111 214M189 157L200 190L209 214M160 141V218M129 183H191" stroke="#C9FAFF" stroke-width="2" stroke-linecap="round" opacity="0.7" />
+    <path d="M151 101H155M165 101H169M151 112C156 116 164 116 169 112" stroke="#F4FFFF" stroke-width="2" stroke-linecap="round" opacity="0.82" />
+    <path d="M143 151L160 164L177 151M137 211H183" stroke="#8BEAFF" stroke-width="2" stroke-linecap="round" opacity="0.65" />
+    <circle cx="160" cy="104" r="28" stroke="#E8FFFF" stroke-width="1" stroke-dasharray="2 8" opacity="0.62" />
   </g>
 
   <g id="freeze-shards" fill="#D9FBFF" stroke="#8AEAFF" stroke-linejoin="round">
-    <path d="M160 22L165 39L182 44L165 49L160 66L155 49L138 44L155 39L160 22Z" opacity="0.9" />
-    <path d="M271 92L275 104L287 108L275 112L271 124L267 112L255 108L267 104L271 92Z" opacity="0.78" />
-    <path d="M49 193L53 205L65 209L53 213L49 225L45 213L33 209L45 205L49 193Z" opacity="0.72" />
-    <path d="M238 242L242 253L253 257L242 261L238 272L234 261L223 257L234 253L238 242Z" opacity="0.82" />
-    <circle cx="93" cy="75" r="3" fill="#FFFFFF" />
-    <circle cx="266" cy="191" r="2.5" fill="#FFFFFF" />
-    <circle cx="83" cy="257" r="2" fill="#A4F2FF" />
+    <path d="M160 17L165 34L182 39L165 44L160 61L155 44L138 39L155 34L160 17Z" opacity="0.9" />
+    <path d="M276 69L280 81L292 85L280 89L276 101L272 89L260 85L272 81L276 69Z" opacity="0.78" />
+    <path d="M44 214L48 226L60 230L48 234L44 246L40 234L28 230L40 226L44 214Z" opacity="0.72" />
+    <path d="M244 259L248 270L259 274L248 278L244 289L240 278L229 274L240 270L244 259Z" opacity="0.82" />
+    <circle cx="91" cy="61" r="3" fill="#FFFFFF" />
+    <circle cx="267" cy="185" r="2.5" fill="#FFFFFF" />
+    <circle cx="73" cy="267" r="2" fill="#A4F2FF" />
   </g>
 </svg>
