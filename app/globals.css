@@ -94,6 +94,15 @@ button { font: inherit; }
 .home-copy h2 { max-width: 640px; margin: 17px 0 21px; color: var(--cream); font-size: clamp(48px, 7.4vw, 92px); font-weight: 500; letter-spacing: -.065em; line-height: .88; }
 .home-copy h2 em { color: var(--orange); font-style: normal; text-shadow: 0 0 32px rgba(255,120,78,.28); }
 .home-lede { max-width: 390px; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.how-to-play-list { display: grid; gap: 0; max-width: 430px; margin: 29px 0 0; padding: 0; list-style: none; }
+.how-to-play-list li { display: grid; grid-template-columns: 34px 1fr; gap: 13px; align-items: start; padding: 12px 0; border-top: 1px solid rgba(133,149,203,.25); }
+.how-to-play-list li:last-child { border-bottom: 1px solid rgba(133,149,203,.25); }
+.how-to-play-number { display: grid; place-items: center; width: 29px; height: 29px; border: 1px solid rgba(244,191,104,.6); color: var(--gold); font-family: var(--font-geist-mono), monospace; font-size: 9px; }
+.how-to-play-list strong { display: block; padding-top: 2px; color: var(--cream); font-size: 10px; letter-spacing: .14em; }
+.how-to-play-list p { margin: 6px 0 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.how-to-play-list a { color: var(--cyan); text-decoration: none; }
+.how-to-play-list a:hover { color: var(--cream); text-decoration: underline; text-underline-offset: 3px; }
+.how-to-play-list kbd { padding: 2px 5px; border: 1px solid rgba(114,230,211,.45); color: var(--cyan); font-family: var(--font-geist-mono), monospace; font-size: 9px; }
 .home-menu-panel { border: 1px solid rgba(133,149,203,.38); background: linear-gradient(140deg, rgba(18,27,66,.92), rgba(10,16,42,.8)); box-shadow: 0 24px 80px rgba(0,0,0,.3); }
 .home-panel-heading { display: flex; align-items: flex-start; justify-content: space-between; padding: 25px 25px 22px; border-bottom: 1px solid rgba(133,149,203,.2); }
 .home-panel-heading h3 { margin: 7px 0 0; color: var(--cream); font-size: 21px; font-weight: 500; letter-spacing: .15em; }
@@ -153,6 +162,7 @@ button { font: inherit; }
   .home-hero { display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 35px; padding: 45px 0 42px; }
   .home-copy h2 { margin-top: 15px; font-size: clamp(47px, 14vw, 76px); }
   .home-lede { max-width: 350px; font-size: 11px; }
+  .how-to-play-list { max-width: 470px; margin-top: 24px; }
   .home-menu-panel { width: 100%; }
   .home-panel-heading { padding: 19px 18px 17px; }
   .game-mode-list { padding: 12px; }

@@ -19,10 +19,33 @@ export default function HomeMenu() {
       </header>
 
       <section className="home-hero" aria-labelledby="home-title">
-        <div className="home-copy">
+        <div className="home-copy how-to-play">
           <p className="eyebrow">ENTER THE SANCTUM <span className="eyebrow-divider">/</span> TRIAL 01</p>
-          <h2 id="home-title">WEAVE YOUR<br /><em>LEGEND.</em></h2>
-          <p className="home-lede">Draw ancient runes, command living fire, and face the Ashen Warden in a duel of precision and resonance.</p>
+          <h2 id="home-title">HOW TO<br /><em>PLAY.</em></h2>
+          <p className="home-lede">Three simple steps stand between you and your first spell.</p>
+          <ol className="how-to-play-list" aria-label="How to play">
+            <li>
+              <span className="how-to-play-number">01</span>
+              <div>
+                <strong>LEARN THE SYMBOL</strong>
+                <p>Study the rune in the <Link href="/spells">spell book</Link>.</p>
+              </div>
+            </li>
+            <li>
+              <span className="how-to-play-number">02</span>
+              <div>
+                <strong>DRAW THE SYMBOL</strong>
+                <p>Trace the shape in the arena with your mouse.</p>
+              </div>
+            </li>
+            <li>
+              <span className="how-to-play-number">03</span>
+              <div>
+                <strong>PRESS A TO EXECUTE</strong>
+                <p>When the rune is complete, press <kbd>A</kbd> to cast.</p>
+              </div>
+            </li>
+          </ol>
         </div>
 
         <div className="home-menu-panel">
