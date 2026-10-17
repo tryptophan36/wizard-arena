@@ -36,6 +36,9 @@ or multiplayer implementation yet.
 - Use the arena drawing toolbar to switch between Freehand, Circle, Square, and
   Line tools. Freehand is selected by default, and the selected tool stays
   active until you change it.
+- After each stroke, the rune briefly settles before matching. Use that pause to
+  switch tools or begin the next stroke of a complex rune; a completed spell is
+  only released after the pause expires.
 - Each gesture must be long enough to pass recognition before its spell launches;
   a short or malformed rune shows a failure hint and does not spend mana.
 - Projectile travel is deliberately slower, giving the defender time to draw

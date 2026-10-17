@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { type RunePoint, type RuneStroke } from "@/game/runeGesture";
+import { MAX_STROKE_PAUSE_MS } from "@/game/recognition/shared";
 import { EMBER_LANCE_ASSET } from "@/game/emberLanceAsset";
 import { LIGHTNING_BOLT_ASSET } from "@/game/lightningBoltAsset";
 import { SHIELD_ASSET } from "@/game/shieldAsset";
@@ -36,6 +37,9 @@ const MAX_MANA = 100;
 const MAX_HEALTH = 100;
 const DEFAULT_FREEZE_DURATION_MS = 2500;
 const SHIELDED_FREEZE_DURATION_MS = 1000;
+// Let the player switch tools or add the next stroke before committing a rune.
+const POST_STROKE_GRACE_MS = 450;
+const MULTI_STROKE_FEEDBACK_MS = 1800;
 type Point = { x: number; y: number };
 
 function isFreezeSpell(spell: SpellData) {
@@ -78,6 +82,9 @@ export class ArenaScene extends Phaser.Scene {
   private drawingTool: DrawingTool = DEFAULT_DRAWING_TOOL;
   private drawingToolState: DrawingToolState;
   private gestureActive = false;
+  private pendingMatchAt: number | null = null;
+  private gestureInputUntil = 0;
+  private gestureSequenceOpen = false;
   private gestureFeedback: GestureFeedback = { status: "idle", message: "DRAW RUNE", hint: "DRAW A REGISTERED SPELL SYMBOL" };
   private gestureFeedbackUntil = 0;
   private enemyPhase: OpponentPhase = "ready";
@@ -100,12 +107,16 @@ export class ArenaScene extends Phaser.Scene {
 
   public setDrawingTool(tool: DrawingTool) {
     if (this.drawingTool === tool) return;
+    const now = this.game.loop?.time ?? 0;
+    const keepGestureSequence = this.pendingMatchAt !== null || (this.gestureSequenceOpen && now < this.gestureInputUntil);
     this.drawingTool = tool;
     this.gestureActive = false;
-    this.gestureStrokes = [];
     this.activeStroke = [];
-    this.gestureFeedbackUntil = 0;
-    this.setGestureFeedback({ status: "idle", message: `${tool.toUpperCase()} TOOL READY`, hint: this.spell.gesture.hint });
+    if (!keepGestureSequence) {
+      this.clearGestureInput();
+      this.gestureFeedbackUntil = 0;
+    }
+    this.setGestureFeedback({ status: keepGestureSequence ? "drawing" : "idle", message: `${tool.toUpperCase()} TOOL READY`, hint: this.spell.gesture.hint });
   }
 
   private getInitialGesture() {
@@ -114,6 +125,15 @@ export class ArenaScene extends Phaser.Scene {
 
   private syncDrawingTool() {
     if (this.drawingToolState.value !== this.drawingTool) this.setDrawingTool(this.drawingToolState.value);
+  }
+
+  private clearGestureInput() {
+    this.pendingMatchAt = null;
+    this.gestureInputUntil = 0;
+    this.gestureSequenceOpen = false;
+    this.gestureActive = false;
+    this.gestureStrokes = [];
+    this.activeStroke = [];
   }
 
   preload() {
@@ -206,16 +226,23 @@ export class ArenaScene extends Phaser.Scene {
     if (this.playerFrozenUntil > 0 && time >= this.playerFrozenUntil) {
       this.playerFrozenUntil = 0;
       if (!this.gestureActive) {
+        this.clearGestureInput();
         this.gestureFeedbackUntil = 0;
-        this.gestureStrokes = [];
-        this.activeStroke = [];
         this.setGestureFeedback(this.getInitialGesture());
       }
     }
+    if (!this.gestureActive && this.pendingMatchAt !== null && time >= this.pendingMatchAt) {
+      this.pendingMatchAt = null;
+      this.matchGesture(time);
+    }
+    if (!this.gestureActive && this.gestureSequenceOpen && time >= this.gestureInputUntil) {
+      this.clearGestureInput();
+      this.gestureFeedbackUntil = 0;
+      this.setGestureFeedback(this.getInitialGesture());
+    }
     if (!this.gestureActive && this.gestureFeedbackUntil > 0 && time >= this.gestureFeedbackUntil) {
       this.gestureFeedbackUntil = 0;
-      this.gestureStrokes = [];
-      this.activeStroke = [];
+      this.clearGestureInput();
       this.setGestureFeedback(this.getInitialGesture());
     }
     const cooldown = Math.max(0, (this.cooldownUntil - time) / 1000);
@@ -350,8 +377,7 @@ export class ArenaScene extends Phaser.Scene {
       this.callbacks.onPhaseChange("ready");
     }
     this.gestureActive = false;
-    this.gestureStrokes = [];
-    this.activeStroke = [];
+    this.clearGestureInput();
     this.gestureFeedbackUntil = this.playerFrozenUntil;
     this.setGestureFeedback({ status: "failed", message: "FROZEN", hint: "RUNE INPUT SEALED" });
   }
@@ -364,12 +390,25 @@ export class ArenaScene extends Phaser.Scene {
   private finishGame(state: Exclude<ArenaGameState, "playing">) {
     if (this.gameState !== "playing") return;
     this.gameState = state;
+    this.clearGestureInput();
+    this.gestureFeedbackUntil = 0;
     this.callbacks.onGameStateChange(state);
   }
 
   private handlePointerDown(pointer: Phaser.Input.Pointer) {
     const now = this.game.loop?.time ?? 0;
-    if (this.gameState !== "playing" || pointer.wasTouch || pointer.button !== 0 || now < this.playerFrozenUntil || this.gestureActive || (this.phase !== "ready" && this.phase !== "flying")) return;
+    if (this.gameState !== "playing" || pointer.wasTouch || pointer.button !== 0 || now < this.playerFrozenUntil) return;
+    if (this.pendingMatchAt !== null && now >= this.pendingMatchAt) {
+      this.pendingMatchAt = null;
+      this.matchGesture(now);
+    }
+    if (this.gestureSequenceOpen && now >= this.gestureInputUntil) {
+      this.clearGestureInput();
+      this.gestureFeedbackUntil = 0;
+      this.setGestureFeedback(this.getInitialGesture());
+    }
+    if (this.gestureActive || (this.phase !== "ready" && this.phase !== "flying")) return;
+    if (!this.gestureSequenceOpen && this.gestureStrokes.length > 0) this.clearGestureInput();
     this.gestureActive = true;
     this.activeStroke = [{ x: pointer.worldX, y: pointer.worldY, timestamp: now }];
     this.gestureFeedbackUntil = 0;
@@ -388,9 +427,7 @@ export class ArenaScene extends Phaser.Scene {
     if (!this.gestureActive || pointer.wasTouch) return;
     const now = this.game.loop?.time ?? 0;
     if (now < this.playerFrozenUntil) {
-      this.gestureActive = false;
-      this.gestureStrokes = [];
-      this.activeStroke = [];
+      this.clearGestureInput();
       return;
     }
     this.gestureActive = false;
@@ -400,19 +437,35 @@ export class ArenaScene extends Phaser.Scene {
     const points = normalizeDrawingStroke(this.activeStroke, this.drawingTool);
     this.gestureStrokes.push({ points, startedAt: points[0]?.timestamp, endedAt: now });
     this.activeStroke = [];
+    this.gestureSequenceOpen = true;
+    this.gestureInputUntil = now + MAX_STROKE_PAUSE_MS;
+    this.pendingMatchAt = now + POST_STROKE_GRACE_MS;
+    this.setGestureFeedback({ status: "drawing", message: "RUNE SETTLING…", hint: this.spell.gesture.hint });
+  }
+
+  private matchGesture(now: number) {
+    if (this.gameState !== "playing" || now < this.playerFrozenUntil || this.gestureStrokes.length === 0) {
+      this.clearGestureInput();
+      return;
+    }
 
     const match = recognizeAnySpell(this.gestureStrokes, Math.min(this.scale.width, this.scale.height));
     const recognition = match.recognition;
     if (!recognition.recognized) {
       if (recognition.stage === "awaiting-second-stroke" || recognition.stage === "awaiting-next-stroke") {
-        this.gestureFeedbackUntil = now + 1800;
+        this.gestureSequenceOpen = true;
+        this.gestureFeedbackUntil = now + MULTI_STROKE_FEEDBACK_MS;
         this.setGestureFeedback({ status: "drawing", message: `${match.spell.name} STROKE ${recognition.completedStrokes} INSCRIBED`, hint: recognition.hint });
         return;
       }
+      this.gestureSequenceOpen = false;
+      this.gestureInputUntil = 0;
       this.showGestureFeedback({ status: "failed", message: "RUNE NOT RECOGNIZED", hint: recognition.hint });
       return;
     }
 
+    this.gestureSequenceOpen = false;
+    this.gestureInputUntil = 0;
     this.spell = match.spell;
     this.callbacks.onSpellChange(this.spell.id);
     if (this.castSpell()) {
