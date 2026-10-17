@@ -1,0 +1,83 @@
+[
+  {
+    "id": "ember-lance",
+    "name": "EMBER LANCE",
+    "symbol": "✦",
+    "school": "EMBER SANCTUM",
+    "description": "A focused bolt of living flame.",
+    "effect": "Direct hit. A condensed lance of living flame strikes the target and leaves a brief ember trail.",
+    "manaCost": 25,
+    "cooldown": 2.4,
+    "damage": 25,
+    "difficulty": "INITIATE",
+    "timings": { "charging": 460, "flying": 900, "impact": 720 },
+    "tags": ["FOCUSED", "FIRE", "SINGLE TARGET"],
+    "assetKey": "ember-lance",
+    "visualKind": "ember-lance",
+    "kind": "offensive",
+    "gesture": {
+      "type": "two-stroke",
+      "recognizer": "ember-lance",
+      "hint": "STROKE 1: LONG DOWNWARD LINE · STROKE 2: UP-RIGHT HOOK",
+      "steps": [
+        { "number": "01", "title": "Draw the ember stroke", "description": "Begin at the crown and pull one steady line straight down. Keep the stroke long and centered to anchor the spell.", "gesture": "CROWN  ↓  TURN" },
+        { "number": "02", "title": "Hook toward the flame", "description": "Lift or keep holding, then finish with a clean diagonal sweep up and right.", "gesture": "TURN  ↗  POINT" }
+      ]
+    }
+  },
+  {
+    "id": "lightning",
+    "name": "LIGHTNING",
+    "symbol": "ϟ",
+    "school": "STORM SPIRE",
+    "description": "A chained bolt of stormlight.",
+    "effect": "Direct hit. A storm-charged bolt arcs into the target, branching on impact with a brief electric afterimage.",
+    "manaCost": 30,
+    "cooldown": 2.8,
+    "damage": 30,
+    "difficulty": "ADEPT",
+    "timings": { "charging": 420, "flying": 820, "impact": 720 },
+    "tags": ["CHAINED", "STORM", "SINGLE TARGET"],
+    "assetKey": "lightning-bolt",
+    "visualKind": "lightning",
+    "kind": "offensive",
+    "gesture": {
+      "type": "three-stroke",
+      "recognizer": "lightning",
+      "hint": "STROKE 1: DOWN-RIGHT · STROKE 2: DOWN-LEFT · STROKE 3: DOWN-RIGHT",
+      "steps": [
+        { "number": "01", "title": "Start the discharge", "description": "Begin high and drive a sharp diagonal down and right. This is the bolt's first fork.", "gesture": "CROWN  ↘  TURN" },
+        { "number": "02", "title": "Cross the current", "description": "Lift near the point, then cut down and left to make the lightning zigzag.", "gesture": "TURN  ↙  TURN" },
+        { "number": "03", "title": "Finish the strike", "description": "End with a shorter diagonal down and right. Release cleanly to send the charge forward.", "gesture": "TURN  ↘  RELEASE" }
+      ]
+    }
+  },
+  {
+    "id": "aegis",
+    "name": "AEGIS",
+    "symbol": "⊠",
+    "school": "WARDEN VAULT",
+    "description": "A reactive shield that catches the next spell.",
+    "effect": "Raise a luminous ward around the defender. If timed during a projectile flight, it absorbs the next impact completely.",
+    "manaCost": 20,
+    "cooldown": 1.8,
+    "damage": 0,
+    "difficulty": "ADEPT",
+    "timings": { "charging": 0, "flying": 0, "impact": 0 },
+    "shieldDurationMs": 2400,
+    "tags": ["DEFENSIVE", "REACTION", "BARRIER"],
+    "assetKey": "aegis-shield",
+    "visualKind": "shield",
+    "kind": "defensive",
+    "gesture": {
+      "type": "three-stroke",
+      "recognizer": "square-cross",
+      "hint": "TRACE A SQUARE · THEN DRAW BOTH DIAGONALS",
+      "steps": [
+        { "number": "01", "title": "Trace the ward", "description": "Draw one clean square and close the final edge where you began.", "gesture": "START  □  CLOSE" },
+        { "number": "02", "title": "Draw the first diagonal", "description": "Cut from one corner of the ward to its opposite corner.", "gesture": "CORNER  ↘  CORNER" },
+        { "number": "03", "title": "Cross the ward", "description": "Draw the second diagonal across the remaining corners to complete the Aegis seal.", "gesture": "CORNER  ↙  CORNER" }
+      ]
+    }
+  }
+]

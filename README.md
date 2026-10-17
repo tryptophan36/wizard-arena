@@ -3,18 +3,25 @@
 Wizard Arena is a Next.js browser-game project where players cast spells as
 wizards and defeat their opponents. The first playable slice is now live: a
 procedural Ember Sanctum arena with the Lyra Vell wizard, the Ashen Warden
-training target, and the Ember Lance spell.
+training target, and a data-driven spellbook containing Ember Lance and
+Lightning plus the reactive Aegis shield.
 
 ## First playable slice
 
-- Hold the left mouse button and draw the Ember Lance rune: a downward stroke
-  followed by an up-right diagonal hook.
+- Draw Ember Lance with its long downward stroke followed by an up-right hook.
+- Open the spellbook to learn Lightning: draw three connected diagonal strokes
+  (down-right, down-left, down-right), or draw the zig-zag continuously.
+- Draw Aegis as a closed square followed by two opposite diagonals while a
+  projectile is travelling to raise a ward and absorb that impact.
+- Select `LEARN IN ARENA` on a spell card to equip it with the matching symbol
+  and gesture; opening `/` keeps Ember Lance equipped by default.
 - Open `/spells` or choose `SPELLBOOK` in the arena header to study the rune
   diagram and drawing order before entering the duel.
-- The stroke must be long enough to pass recognition before Ember Lance launches;
+- Each gesture must be long enough to pass recognition before its spell launches;
   a short or malformed rune shows a failure hint and does not spend mana.
-- Watch the cast charge, projectile trail, impact burst, target recoil, mana
-  cost, and cooldown feedback.
+- Projectile travel is deliberately slower, giving the defender time to draw
+  Aegis and react. Watch the cast charge, trail, impact burst, target recoil,
+  mana cost, and cooldown feedback for the selected spell.
 - Repeat the cast until the training target's health reaches zero.
 
 The scene uses original procedural Phaser artwork rather than external game
@@ -22,6 +29,16 @@ assets, so the prototype can be rebuilt and run without a separate asset
 pipeline. The next quality bar is to replace selected procedural pieces with
 licensed, hand-authored sprites and audio while preserving the same simulation
 and effects interfaces.
+
+## Adding a spell
+
+Spell content lives in [`data/spells.json`](data/spells.json). Add a record with
+its symbol, costs, timings, gesture metadata, asset key, and visual kind. Add a
+recognizer to the registry in [`game/spellRecognition.ts`](game/spellRecognition.ts)
+only when the gesture is a new shape; existing recognizers can be reused. Add a
+visual renderer in `ArenaScene` only for a genuinely new effect style. The arena
+tries every registered recognizer after each completed drawing, so the matching
+symbol chooses the spell rather than the currently selected card.
 
 ## Requirements
 

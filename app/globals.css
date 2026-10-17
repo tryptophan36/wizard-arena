@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-:root { --ink: #090d24; --cream: #f4e9ce; --muted: #9da4c4; --cyan: #72e6d3; --gold: #f4bf68; --orange: #ff784e; }
+:root { --ink: #090d24; --cream: #f4e9ce; --muted: #9da4c4; --cyan: #72e6d3; --gold: #f4bf68; --orange: #ff784e; --electric: #8feaff; --electric-blue: #7387ff; }
 * { box-sizing: border-box; }
 html, body { width: 100%; min-height: 100%; }
 body { margin: 0; background: var(--ink); color: var(--cream); font-family: Arial, Helvetica, sans-serif; }
@@ -29,7 +29,7 @@ button { font: inherit; }
 .encounter-rule span { display: block; height: 100%; background: var(--orange); box-shadow: 0 0 8px rgba(255,120,78,.7); transition: width .3s ease; }
 .encounter-meta { display: flex; justify-content: space-between; margin-top: 7px; color: var(--muted); font-size: 8px; letter-spacing: .14em; }
 .encounter-meta strong { color: var(--cream); font-weight: 500; }
-.target-name { position: absolute; z-index: 2; left: 72%; top: 55%; display: flex; flex-direction: column; gap: 5px; color: var(--cream); font-size: 10px; letter-spacing: .22em; transform: translateX(-50%); pointer-events: none; }
+.target-name { position: absolute; z-index: 2; left: 80%; top: 55%; display: flex; flex-direction: column; gap: 5px; color: var(--cream); font-size: 10px; letter-spacing: .22em; transform: translateX(-50%); pointer-events: none; }
 .target-name small { color: var(--muted); font-size: 8px; letter-spacing: .17em; }
 .target-chevron { margin: 0 auto 1px; color: var(--orange); font-size: 8px; }
 .spell-panel { left: 42px; bottom: 62px; display: flex; align-items: center; width: min(510px, calc(100vw - 84px)); min-height: 98px; padding: 15px 17px; border: 1px solid rgba(133,149,203,.32); background: linear-gradient(100deg, rgba(14,21,55,.92), rgba(14,20,49,.62)); box-shadow: 0 16px 50px rgba(0,0,0,.25); }
@@ -70,7 +70,7 @@ button { font: inherit; }
   .top-hud { top: 19px; left: 20px; right: 20px; }
   .round-status, .top-actions { display: none; }
   .encounter-card { top: 92px; left: 20px; }
-  .target-name { top: 52%; left: 72%; font-size: 8px; }
+  .target-name { top: 52%; left: 80%; font-size: 8px; }
   .spell-panel { left: 20px; bottom: 60px; width: calc(100vw - 40px); min-height: 82px; padding: 10px; }
   .spell-icon { width: 42px; height: 52px; margin-right: 10px; }
   .spell-description { display: none; }
@@ -106,6 +106,54 @@ button { font: inherit; }
 .difficulty-dots i { display: block; width: 22px; height: 3px; background: var(--gold); box-shadow: 0 0 8px rgba(244,191,104,.42); }
 .difficulty-dots i.is-muted { background: rgba(157,164,196,.25); box-shadow: none; }
 .spellbook-content { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(300px, .65fr); gap: 18px; padding: 20px 0 0; }
+.spell-cards { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; max-width: 1180px; margin: 0 auto; padding-top: 20px; }
+.spell-card { min-width: 0; border: 1px solid rgba(133,149,203,.3); background: linear-gradient(135deg, rgba(18,27,66,.9), rgba(11,17,45,.78)); box-shadow: 0 18px 55px rgba(0,0,0,.2); }
+.spell-card-lightning { border-color: rgba(115,135,255,.45); background: linear-gradient(135deg, rgba(19,31,82,.94), rgba(11,17,51,.82)); }
+.spell-card-topline, .spell-card-heading, .spell-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.spell-card-topline { padding: 18px 20px 0; color: var(--muted); font-size: 8px; letter-spacing: .16em; }
+.spell-card-index { color: var(--gold); }
+.spell-card-heading { align-items: flex-start; justify-content: flex-start; padding: 18px 20px; }
+.spell-card-symbol { display: grid; flex: 0 0 auto; place-items: center; width: 58px; height: 68px; border: 1px solid rgba(244,191,104,.62); color: var(--gold); font-size: 32px; text-shadow: 0 0 18px rgba(244,191,104,.6); }
+.spell-card-lightning .spell-card-symbol { border-color: rgba(143,234,255,.72); color: var(--electric); text-shadow: 0 0 18px rgba(143,234,255,.8); }
+.spell-card-aegis .spell-card-symbol { border-color: rgba(143,234,255,.72); color: var(--electric); text-shadow: 0 0 18px rgba(143,234,255,.8); }
+.spell-card-heading h3 { margin: 5px 0 5px; color: var(--cream); font-size: 21px; letter-spacing: .12em; }
+.spell-card-heading p:not(.eyebrow) { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
+.spell-card-stats { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0 20px; border-top: 1px solid rgba(133,149,203,.18); border-bottom: 1px solid rgba(133,149,203,.18); }
+.spell-card-stats div { padding: 13px 10px 12px 0; }
+.spell-card-stats div + div { padding-left: 10px; border-left: 1px solid rgba(133,149,203,.18); }
+.spell-card-stats span { display: block; color: var(--muted); font-size: 7px; letter-spacing: .14em; }
+.spell-card-stats strong { display: block; margin-top: 6px; color: var(--gold); font-size: 19px; font-weight: 500; }
+.spell-card-stats small { color: var(--muted); font-size: 7px; letter-spacing: .08em; }
+.spell-card-lightning .spell-card-stats strong { color: var(--electric); }
+.spell-card-rune { display: flex; align-items: center; gap: 15px; min-height: 96px; margin: 0 20px; padding: 15px 0; }
+.mini-rune { position: relative; flex: 0 0 84px; height: 68px; }
+.mini-rune-line, .mini-rune-turn, .mini-rune-strike { position: absolute; display: block; height: 3px; border-radius: 3px; background: linear-gradient(90deg, #ffe4a3, #ff684f); box-shadow: 0 0 8px rgba(255,120,78,.65); transform-origin: left center; }
+.mini-rune-line { top: 5px; left: 38px; width: 52px; transform: rotate(90deg); }
+.mini-rune-turn { top: 57px; left: 38px; width: 35px; transform: rotate(-42deg); }
+.spell-card-lightning .mini-rune-line, .spell-card-lightning .mini-rune-turn, .spell-card-lightning .mini-rune-strike { background: linear-gradient(90deg, #ffffff, var(--electric), var(--electric-blue)); box-shadow: 0 0 9px rgba(143,234,255,.75); }
+.spell-card-lightning .mini-rune-line { top: 2px; left: 18px; width: 34px; transform: rotate(48deg); }
+.spell-card-lightning .mini-rune-turn { top: 28px; left: 41px; width: 38px; transform: rotate(136deg); }
+.mini-rune-strike { top: 54px; left: 15px; width: 36px; transform: rotate(43deg); }
+.mini-rune-square { position: absolute; top: 9px; left: 17px; display: block; width: 50px; height: 50px; border: 3px solid var(--electric); box-shadow: 0 0 12px rgba(143,234,255,.68), inset 0 0 10px rgba(115,135,255,.32); }
+.mini-rune-square::before, .mini-rune-square::after { position: absolute; top: 22px; left: 2px; width: 40px; height: 2px; background: var(--electric); box-shadow: 0 0 7px rgba(143,234,255,.8); content: ""; }
+.mini-rune-square::before { transform: rotate(45deg); }
+.mini-rune-square::after { transform: rotate(-45deg); }
+.spell-card-rune strong { display: block; margin-top: 7px; color: var(--cream); font-size: 10px; letter-spacing: .12em; }
+.spell-card-rune p { max-width: 260px; margin: 6px 0 0; color: var(--muted); font-size: 9px; line-height: 1.45; }
+.spell-card-effect { margin: 0 20px; padding: 13px; border-left: 2px solid var(--orange); background: rgba(255,120,78,.08); }
+.spell-card-lightning .spell-card-effect { border-color: var(--electric); background: rgba(83,137,255,.1); }
+.spell-card-effect p { margin: 7px 0 0; color: #d4d5e4; font-size: 10px; line-height: 1.5; }
+.spell-card-steps { display: grid; gap: 0; margin: 16px 20px 0; padding: 0; list-style: none; border-top: 1px solid rgba(133,149,203,.18); }
+.spell-card-steps li { display: grid; grid-template-columns: 25px 1fr auto; gap: 9px; align-items: start; padding: 12px 0; border-bottom: 1px solid rgba(133,149,203,.14); }
+.spell-card-steps li > span { display: grid; place-items: center; width: 23px; height: 23px; border: 1px solid rgba(244,191,104,.5); color: var(--gold); font-size: 8px; }
+.spell-card-steps strong { color: var(--cream); font-size: 9px; letter-spacing: .07em; }
+.spell-card-steps p { margin: 4px 0 0; color: var(--muted); font-size: 9px; line-height: 1.4; }
+.spell-card-steps b { color: var(--cyan); font-family: monospace; font-size: 8px; font-weight: 500; white-space: nowrap; }
+.spell-card-footer { align-items: flex-end; padding: 15px 20px 20px; }
+.spell-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.spell-card-footer .spell-tags { margin: 0; }
+.spell-tags span { padding: 5px 6px; border: 1px solid rgba(114,230,211,.27); color: var(--cyan); font-size: 7px; letter-spacing: .13em; }
+.spell-card-footer .arena-cta { padding: 11px 12px; font-size: 8px; }
 .rune-card, .spell-profile { border: 1px solid rgba(133,149,203,.3); background: linear-gradient(135deg, rgba(18,27,66,.88), rgba(11,17,45,.77)); box-shadow: 0 18px 55px rgba(0,0,0,.2); }
 .rune-card { min-height: 430px; }
 .card-heading, .steps-heading { display: flex; align-items: start; justify-content: space-between; gap: 20px; padding: 20px 22px; border-bottom: 1px solid rgba(133,149,203,.2); }
@@ -117,20 +165,20 @@ button { font: inherit; }
 .rune-stage::after { right: 20px; bottom: 20px; border-right: 1px solid; border-bottom: 1px solid; }
 .rune-orbit { position: absolute; border: 1px solid rgba(114,230,211,.12); border-radius: 50%; transform: rotate(-21deg); }
 .rune-orbit-one { width: 430px; height: 150px; }
-.rune-orbit-two { width: 290px; height: 100px; transform: rotate(29deg); border-color: rgba(255,120,78,.12); }
+.rune-orbit-two { width: 290px; height: 100px; transform: rotate(29deg); border-color: rgba(115,135,255,.2); }
 .rune-diagram { position: relative; width: min(100%, 360px); height: 320px; overflow: visible; }
 .rune-ring { fill: none; stroke: rgba(114,230,211,.11); stroke-width: 1; stroke-dasharray: 2 9; }
 .rune-ghost { fill: none; stroke: rgba(114,230,211,.12); stroke-width: 1; stroke-dasharray: 4 8; }
 .rune-stroke { fill: none; stroke: url(#runeGlow); stroke-linecap: round; stroke-linejoin: round; filter: url(#softGlow); }
 .rune-stroke-main { stroke-width: 4; }
 .rune-stroke-wing { stroke-width: 3; }
-.rune-stroke-wing-right { stroke: #72e6d3; opacity: .88; }
+.rune-stroke-wing-right { stroke: var(--electric); opacity: .9; }
 .rune-stroke-tip { stroke: #ff784e; stroke-width: 4; }
-.rune-flare { fill: none; stroke: #ffe4a3; stroke-width: 2; stroke-linecap: round; opacity: .85; }
+.rune-flare { fill: none; stroke: #e8fbff; stroke-width: 2; stroke-linecap: round; opacity: .9; }
 .rune-nodes circle { fill: #10183f; stroke: var(--gold); stroke-width: 1.5; }
 .rune-nodes text { fill: var(--gold); font-family: var(--font-geist-mono), monospace; font-size: 10px; font-weight: 700; text-anchor: middle; }
 .rune-stage-caption { position: absolute; right: 22px; bottom: 19px; left: 22px; display: flex; align-items: center; gap: 10px; margin: 0; color: rgba(157,164,196,.72); font-size: 8px; letter-spacing: .16em; }
-.rune-stage-caption i { width: 28px; height: 1px; background: var(--orange); }
+.rune-stage-caption i { width: 28px; height: 1px; background: var(--electric); }
 .spell-profile { padding-bottom: 21px; }
 .profile-symbol { color: var(--gold); font-size: 20px; }
 .spell-stats { display: grid; grid-template-columns: 1fr 1fr; margin: 0; padding: 0 22px; }
@@ -140,7 +188,7 @@ button { font: inherit; }
 .spell-stats dd { margin: 9px 0 0; color: var(--gold); }
 .spell-stats dd strong { font-size: 24px; font-weight: 500; letter-spacing: -.04em; }
 .spell-stats dd span { color: var(--muted); font-size: 8px; letter-spacing: .1em; }
-.effect-callout { margin: 20px 22px 0; padding: 15px; border-left: 2px solid var(--orange); background: rgba(255,120,78,.08); }
+.effect-callout { margin: 20px 22px 0; padding: 15px; border-left: 2px solid var(--electric); background: rgba(83,137,255,.1); }
 .effect-callout p { margin: 8px 0 0; color: #d4d5e4; font-size: 11px; line-height: 1.65; }
 .spell-tags { display: flex; flex-wrap: wrap; gap: 7px; margin: 20px 22px 0; }
 .spell-tags span { padding: 6px 7px; border: 1px solid rgba(114,230,211,.27); color: var(--cyan); font-size: 7px; letter-spacing: .13em; }
@@ -169,6 +217,7 @@ button { font: inherit; }
   .spellbook-intro { display: block; padding-top: 58px; }
   .difficulty-card { width: 148px; margin-top: 26px; }
   .spellbook-content { grid-template-columns: 1fr; }
+  .spell-cards { grid-template-columns: 1fr; }
   .rune-card { min-height: 390px; }
   .steps-list { grid-template-columns: 1fr; }
   .steps-list li, .steps-list li + li { min-height: auto; padding: 18px 0; border-left: 0; }

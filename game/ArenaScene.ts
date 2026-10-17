@@ -1,5 +1,10 @@
 import Phaser from "phaser";
-import { EMBER_LANCE_RUNE_HINT, recognizeEmberLanceRune, type RunePoint } from "@/game/runeGesture";
+import { type RunePoint, type RuneStroke } from "@/game/runeGesture";
+import { EMBER_LANCE_ASSET } from "@/game/emberLanceAsset";
+import { LIGHTNING_BOLT_ASSET } from "@/game/lightningBoltAsset";
+import { SHIELD_ASSET } from "@/game/shieldAsset";
+import { getSpell, type SpellData, type SpellId } from "@/game/spellData";
+import { recognizeAnySpell } from "@/game/spellRecognition";
 
 export type GestureStatus = "idle" | "drawing" | "recognized" | "failed";
 
@@ -15,36 +20,77 @@ export type ArenaCallbacks = {
   onCooldownChange: (seconds: number) => void;
   onPhaseChange: (phase: "ready" | "charging" | "flying" | "impact") => void;
   onGestureChange: (feedback: GestureFeedback) => void;
+  onSpellChange: (spellId: SpellId) => void;
 };
 
 const MAX_MANA = 100;
-const SPELL_COST = 25;
 const MAX_HEALTH = 100;
-const COOLDOWN = 2.4;
 type Point = { x: number; y: number };
-const INITIAL_GESTURE: GestureFeedback = { status: "idle", message: "DRAW EMBER LANCE RUNE", hint: EMBER_LANCE_RUNE_HINT };
-
 export class ArenaScene extends Phaser.Scene {
   private callbacks: ArenaCallbacks;
+  private spell: SpellData;
   private phase: "ready" | "charging" | "flying" | "impact" = "ready";
   private phaseStarted = 0;
   private cooldownUntil = 0;
   private mana = MAX_MANA;
   private targetHealth = MAX_HEALTH;
+  private projectileSpell: SpellData | null = null;
+  private shieldActive = false;
+  private shieldUntil = 0;
+  private shieldBlockedUntil = 0;
   private lastUiUpdate = -1;
   private art!: Phaser.GameObjects.Graphics;
-  private gesturePoints: RunePoint[] = [];
+  private emberLance!: Phaser.GameObjects.Image;
+  private lightningBolt!: Phaser.GameObjects.Image;
+  private shield!: Phaser.GameObjects.Image;
+  private gestureStrokes: RuneStroke[] = [];
+  private activeStroke: RunePoint[] = [];
   private gestureActive = false;
-  private gestureFeedback = INITIAL_GESTURE;
+  private gestureFeedback: GestureFeedback = { status: "idle", message: "DRAW RUNE", hint: "DRAW A REGISTERED SPELL SYMBOL" };
   private gestureFeedbackUntil = 0;
 
-  constructor(callbacks: ArenaCallbacks) {
+  constructor(callbacks: ArenaCallbacks, spellId: SpellId = "ember-lance") {
     super({ key: "WizardArena" });
     this.callbacks = callbacks;
+    this.spell = getSpell(spellId);
+  }
+
+  private getInitialGesture() {
+    return { status: "idle" as const, message: `DRAW ${this.spell.name} RUNE`, hint: this.spell.gesture.hint };
+  }
+
+  preload() {
+    this.load.svg(EMBER_LANCE_ASSET.key, EMBER_LANCE_ASSET.url, {
+      width: EMBER_LANCE_ASSET.width,
+      height: EMBER_LANCE_ASSET.height,
+    });
+    this.load.svg(LIGHTNING_BOLT_ASSET.key, LIGHTNING_BOLT_ASSET.url, {
+      width: LIGHTNING_BOLT_ASSET.width,
+      height: LIGHTNING_BOLT_ASSET.height,
+    });
+    this.load.svg(SHIELD_ASSET.key, SHIELD_ASSET.url, {
+      width: SHIELD_ASSET.width,
+      height: SHIELD_ASSET.height,
+    });
   }
 
   create() {
     this.art = this.add.graphics();
+    this.emberLance = this.add.image(0, 0, EMBER_LANCE_ASSET.key)
+      .setOrigin(EMBER_LANCE_ASSET.origin.x, EMBER_LANCE_ASSET.origin.y)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false)
+      .setDepth(3);
+    this.lightningBolt = this.add.image(0, 0, LIGHTNING_BOLT_ASSET.key)
+      .setOrigin(LIGHTNING_BOLT_ASSET.origin.x, LIGHTNING_BOLT_ASSET.origin.y)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false)
+      .setDepth(3);
+    this.shield = this.add.image(0, 0, SHIELD_ASSET.key)
+      .setOrigin(SHIELD_ASSET.origin.x, SHIELD_ASSET.origin.y)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false)
+      .setDepth(4);
     this.input.on("pointerdown", this.handlePointerDown, this);
     this.input.on("pointermove", this.handlePointerMove, this);
     this.input.on("pointerup", this.handlePointerUp, this);
@@ -53,17 +99,21 @@ export class ArenaScene extends Phaser.Scene {
     this.callbacks.onPhaseChange("ready");
     this.callbacks.onManaChange(this.mana);
     this.callbacks.onTargetHealthChange(this.targetHealth);
-    this.callbacks.onGestureChange(INITIAL_GESTURE);
+    this.gestureFeedback = this.getInitialGesture();
+    this.callbacks.onSpellChange(this.spell.id);
+    this.callbacks.onGestureChange(this.gestureFeedback);
     this.drawArena(0);
   }
 
   update(time: number, delta: number) {
     const dt = delta / 1000;
     if (this.phase === "ready" && this.mana < MAX_MANA) this.mana = Math.min(MAX_MANA, this.mana + dt * 5);
+    if (this.shieldActive && time >= this.shieldUntil) this.shieldActive = false;
     if (!this.gestureActive && this.gestureFeedbackUntil > 0 && time >= this.gestureFeedbackUntil) {
       this.gestureFeedbackUntil = 0;
-      this.gesturePoints = [];
-      this.setGestureFeedback(INITIAL_GESTURE);
+      this.gestureStrokes = [];
+      this.activeStroke = [];
+      this.setGestureFeedback(this.getInitialGesture());
     }
     const cooldown = Math.max(0, (this.cooldownUntil - time) / 1000);
     if (Math.abs(cooldown - this.lastUiUpdate) > 0.03 || cooldown === 0) {
@@ -71,48 +121,69 @@ export class ArenaScene extends Phaser.Scene {
       this.callbacks.onCooldownChange(cooldown);
       this.callbacks.onManaChange(this.mana);
     }
-    if (this.phase === "charging" && time - this.phaseStarted > 460) {
+    const activeSpell = this.projectileSpell ?? this.spell;
+    if (this.phase === "charging" && time - this.phaseStarted > activeSpell.timings.charging) {
       this.phase = "flying"; this.phaseStarted = time; this.callbacks.onPhaseChange("flying");
-    } else if (this.phase === "flying" && time - this.phaseStarted > 650) {
-      this.phase = "impact"; this.phaseStarted = time; this.targetHealth = Math.max(0, this.targetHealth - 25);
+    } else if (this.phase === "flying" && time - this.phaseStarted > activeSpell.timings.flying) {
+      this.phase = "impact"; this.phaseStarted = time;
+      if (this.shieldActive) {
+        this.shieldActive = false;
+        this.shieldBlockedUntil = time + 440;
+      } else if (activeSpell.kind === "offensive") {
+        this.targetHealth = Math.max(0, this.targetHealth - activeSpell.damage);
+      }
       this.callbacks.onTargetHealthChange(this.targetHealth); this.callbacks.onPhaseChange("impact");
-    } else if (this.phase === "impact" && time - this.phaseStarted > 720) {
-      this.phase = "ready"; this.callbacks.onPhaseChange("ready");
+    } else if (this.phase === "impact" && time - this.phaseStarted > activeSpell.timings.impact) {
+      this.phase = "ready"; this.projectileSpell = null; this.callbacks.onPhaseChange("ready");
     }
     this.drawArena(time);
   }
 
   private handlePointerDown(pointer: Phaser.Input.Pointer) {
-    if (pointer.wasTouch || pointer.button !== 0 || this.gestureActive) return;
+    if (pointer.wasTouch || pointer.button !== 0 || this.gestureActive || (this.phase !== "ready" && this.phase !== "flying")) return;
     this.gestureActive = true;
-    this.gesturePoints = [{ x: pointer.worldX, y: pointer.worldY }];
+    const now = this.game.loop?.time ?? 0;
+    this.activeStroke = [{ x: pointer.worldX, y: pointer.worldY, timestamp: now }];
     this.gestureFeedbackUntil = 0;
-    this.setGestureFeedback({ status: "drawing", message: "TRACING RUNE…", hint: "KEEP HOLDING · DOWN THEN UP-RIGHT" });
+    const strokeNumber = this.gestureStrokes.length + 1;
+    this.setGestureFeedback({ status: "drawing", message: `TRACING STROKE ${strokeNumber}…`, hint: this.spell.gesture.hint });
   }
 
   private handlePointerMove(pointer: Phaser.Input.Pointer) {
     if (!this.gestureActive || !pointer.leftButtonDown() || pointer.wasTouch) return;
-    const next = { x: pointer.worldX, y: pointer.worldY };
-    const previous = this.gesturePoints[this.gesturePoints.length - 1];
-    if (!previous || Phaser.Math.Distance.Between(previous.x, previous.y, next.x, next.y) >= 4) this.gesturePoints.push(next);
+    const next = { x: pointer.worldX, y: pointer.worldY, timestamp: this.game.loop?.time ?? 0 };
+    const previous = this.activeStroke[this.activeStroke.length - 1];
+    if (!previous || Phaser.Math.Distance.Between(previous.x, previous.y, next.x, next.y) >= 4) this.activeStroke.push(next);
   }
 
   private handlePointerUp(pointer: Phaser.Input.Pointer) {
     if (!this.gestureActive || pointer.wasTouch) return;
     this.gestureActive = false;
-    const finalPoint = { x: pointer.worldX, y: pointer.worldY };
-    const previous = this.gesturePoints[this.gesturePoints.length - 1];
-    if (!previous || Phaser.Math.Distance.Between(previous.x, previous.y, finalPoint.x, finalPoint.y) >= 2) this.gesturePoints.push(finalPoint);
+    const now = this.game.loop?.time ?? 0;
+    const finalPoint = { x: pointer.worldX, y: pointer.worldY, timestamp: now };
+    const previous = this.activeStroke[this.activeStroke.length - 1];
+    if (!previous || Phaser.Math.Distance.Between(previous.x, previous.y, finalPoint.x, finalPoint.y) >= 2) this.activeStroke.push(finalPoint);
+    this.gestureStrokes.push({ points: this.activeStroke, startedAt: this.activeStroke[0]?.timestamp, endedAt: now });
+    this.activeStroke = [];
 
-    const recognition = recognizeEmberLanceRune(this.gesturePoints, Math.min(this.scale.width, this.scale.height));
+    const match = recognizeAnySpell(this.gestureStrokes, Math.min(this.scale.width, this.scale.height));
+    const recognition = match.recognition;
     if (!recognition.recognized) {
-      const hint = recognition.reason === "too-short" ? "DRAW A LONGER RUNE" : recognition.reason === "downward-stroke" ? "START WITH A STRAIGHT DOWNWARD STROKE" : "FINISH WITH AN UP-RIGHT DIAGONAL HOOK";
-      this.showGestureFeedback({ status: "failed", message: "RUNE NOT RECOGNIZED", hint });
+      if (recognition.stage === "awaiting-second-stroke" || recognition.stage === "awaiting-next-stroke") {
+        this.gestureFeedbackUntil = now + 1800;
+        this.setGestureFeedback({ status: "drawing", message: `${match.spell.name} STROKE ${recognition.completedStrokes} INSCRIBED`, hint: recognition.hint });
+        return;
+      }
+      this.showGestureFeedback({ status: "failed", message: "RUNE NOT RECOGNIZED", hint: recognition.hint });
       return;
     }
 
-    if (this.castEmberLance()) this.showGestureFeedback({ status: "recognized", message: "RUNE ACCEPTED", hint: "EMBER LANCE RELEASED" });
-    else this.showGestureFeedback({ status: "failed", message: "RUNE CANNOT FIRE YET", hint: this.mana < SPELL_COST ? "WAIT FOR MANA" : "WAIT FOR THE CURRENT CAST TO FINISH" });
+    this.spell = match.spell;
+    this.callbacks.onSpellChange(this.spell.id);
+    if (this.castSpell()) {
+      this.showGestureFeedback({ status: "recognized", message: "RUNE ACCEPTED", hint: `${this.spell.name} RELEASED` });
+    }
+    else this.showGestureFeedback({ status: "failed", message: "RUNE CANNOT FIRE YET", hint: this.mana < this.spell.manaCost ? "WAIT FOR MANA" : "WAIT FOR THE CURRENT CAST TO FINISH" });
   }
 
   private setGestureFeedback(feedback: GestureFeedback) {
@@ -125,40 +196,56 @@ export class ArenaScene extends Phaser.Scene {
     this.setGestureFeedback(feedback);
   }
 
-  private castEmberLance() {
+  private castSpell() {
     const now = this.game.loop?.time ?? 0;
-    if (this.phase !== "ready" || now < this.cooldownUntil || this.mana < SPELL_COST) return false;
-    this.mana -= SPELL_COST; this.cooldownUntil = now + COOLDOWN * 1000;
+    const isShield = this.spell.kind === "defensive";
+    const canCastShield = isShield && (this.phase === "ready" || this.phase === "flying");
+    if ((!isShield && this.phase !== "ready") || (isShield && !canCastShield) || now < this.cooldownUntil || this.mana < this.spell.manaCost) return false;
+    this.mana -= this.spell.manaCost; this.cooldownUntil = now + this.spell.cooldown * 1000;
+    if (isShield) {
+      this.shieldActive = true;
+      this.shieldUntil = now + (this.spell.shieldDurationMs ?? 1600);
+      this.shieldBlockedUntil = 0;
+      this.callbacks.onManaChange(this.mana); this.callbacks.onCooldownChange(this.spell.cooldown);
+      return true;
+    }
+    this.projectileSpell = this.spell;
     this.phase = "charging"; this.phaseStarted = now;
-    this.callbacks.onManaChange(this.mana); this.callbacks.onCooldownChange(COOLDOWN); this.callbacks.onPhaseChange("charging");
+    this.callbacks.onManaChange(this.mana); this.callbacks.onCooldownChange(this.spell.cooldown); this.callbacks.onPhaseChange("charging");
     return true;
   }
 
   private drawArena(time: number) {
     const width = this.scale.width; const height = this.scale.height; const t = time / 1000;
-    const wizard: Point = { x: width * 0.265, y: height * 0.67 };
-    const targetBase: Point = { x: width * 0.73, y: height * 0.62 };
-    const hitT = this.phase === "impact" ? Phaser.Math.Clamp((time - this.phaseStarted) / 720, 0, 1) : 0;
+    const wizard: Point = { x: width * 0.2, y: height * 0.67 };
+    const targetBase: Point = { x: width * 0.8, y: height * 0.62 };
+    const activeSpell = this.projectileSpell ?? this.spell;
+    const hitT = this.phase === "impact" ? Phaser.Math.Clamp((time - this.phaseStarted) / activeSpell.timings.impact, 0, 1) : 0;
     const target: Point = { x: targetBase.x + (this.phase === "impact" ? Math.sin(hitT * Math.PI * 8) * (1 - hitT) * 10 : 0), y: targetBase.y };
     this.art.clear(); this.drawBackdrop(width, height, t); this.drawArenaFloor(width, height, t);
-    this.drawWizard(wizard, t); this.drawTarget(target, t, hitT); this.drawSpell(wizard, target, time, t); this.drawGesture(time);
+     this.drawWizard(wizard, t); this.drawTarget(target, t, hitT); this.drawSpell(wizard, target, time, t); this.drawShield(wizard, time, t); this.drawGesture(time);
   }
 
   private drawGesture(time: number) {
-    if (this.gesturePoints.length < 2) return;
+    const strokes = [...this.gestureStrokes, ...(this.activeStroke.length > 1 ? [{ points: this.activeStroke }] : [])];
+    if (!strokes.some((stroke) => stroke.points.length > 1)) return;
     const age = this.gestureFeedbackUntil > 0 ? Math.max(0, time - (this.gestureFeedbackUntil - 1100)) : 0;
     const alpha = this.gestureActive ? 1 : Phaser.Math.Clamp(1 - age / 1100, 0.2, 1);
     const color = this.gestureFeedback.status === "failed" ? 0xff784e : this.gestureFeedback.status === "recognized" ? 0xffd166 : 0x72e6d3;
-    const drawPath = () => {
+    const drawPath = (points: RunePoint[]) => {
       this.art.beginPath();
-      this.art.moveTo(this.gesturePoints[0].x, this.gesturePoints[0].y);
-      this.gesturePoints.slice(1).forEach((point) => this.art.lineTo(point.x, point.y));
+      this.art.moveTo(points[0].x, points[0].y);
+      points.slice(1).forEach((point) => this.art.lineTo(point.x, point.y));
       this.art.strokePath();
     };
-    this.art.lineStyle(18, color, 0.08 * alpha); drawPath();
-    this.art.lineStyle(8, color, 0.2 * alpha); drawPath();
-    this.art.lineStyle(3, 0xf6fff3, 0.95 * alpha); drawPath();
-    const tip = this.gesturePoints[this.gesturePoints.length - 1];
+    strokes.forEach((stroke) => {
+      if (stroke.points.length < 2) return;
+      this.art.lineStyle(18, color, 0.08 * alpha); drawPath(stroke.points);
+      this.art.lineStyle(8, color, 0.2 * alpha); drawPath(stroke.points);
+      this.art.lineStyle(3, 0xf6fff3, 0.95 * alpha); drawPath(stroke.points);
+    });
+    const lastStroke = strokes[strokes.length - 1];
+    const tip = lastStroke.points[lastStroke.points.length - 1];
     this.art.fillStyle(color, 0.25 * alpha); this.art.fillCircle(tip.x, tip.y, 12);
     this.art.fillStyle(0xf6fff3, 0.9 * alpha); this.art.fillCircle(tip.x, tip.y, 3);
   }
@@ -196,24 +283,156 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private drawTarget(p: Point, t: number, hitT: number) {
-    const g = this.art; const x = p.x; const y = p.y; const flash = this.phase === "impact" ? 0.55 * (1 - hitT) : 0;
+    const g = this.art; const x = p.x; const y = p.y; const flash = this.phase === "impact" ? 0.55 * (1 - hitT) : 0; const activeSpell = this.projectileSpell ?? this.spell;
     g.fillStyle(0x050819, 0.6); g.fillEllipse(x, y + 48, 150, 30); g.fillStyle(0x3e4669, 1); g.beginPath(); g.moveTo(x - 48, y + 37); g.lineTo(x - 43, y - 23); g.lineTo(x - 25, y - 48); g.lineTo(x + 26, y - 48); g.lineTo(x + 47, y - 18); g.lineTo(x + 41, y + 39); g.closePath(); g.fillPath(); g.fillStyle(0x596487, 1); g.fillTriangle(x - 39, y - 19, x - 20, y - 47, x - 8, y - 18); g.fillTriangle(x + 4, y - 45, x + 26, y - 42, x + 39, y - 16); g.fillStyle(0x273052, 1); g.fillCircle(x - 20, y - 9, 6); g.fillCircle(x + 20, y - 9, 6); g.fillStyle(0xffa94d, 1); g.fillCircle(x - 20, y - 9, 3); g.fillCircle(x + 20, y - 9, 3); g.fillStyle(0xd86f4e, 0.9); g.fillCircle(x, y + 12, 13); g.fillStyle(0xffca63, 0.85); g.fillCircle(x, y + 12, 7 + Math.sin(t * 5) * 1.5); g.fillStyle(0x1c2446, 1); g.fillRect(x - 48, y + 30, 96, 9); g.fillStyle(0x63e3c9, 1); g.fillRect(x - 44, y + 32, 88 * (this.targetHealth / MAX_HEALTH), 5);
-    if (flash > 0) { g.fillStyle(0xfff4cf, flash); g.fillCircle(x, y, 62 * flash + 18); }
+    if (flash > 0) { g.fillStyle(activeSpell.visualKind === "lightning" ? 0xd9faff : 0xfff4cf, flash); g.fillCircle(x, y, 62 * flash + 18); }
   }
 
   private drawSpell(wizard: Point, target: Point, time: number, t: number) {
+    const activeSpell = this.projectileSpell ?? this.spell;
+    if (activeSpell.visualKind === "shield") {
+      this.lightningBolt.setVisible(false); this.emberLance.setVisible(false);
+      return;
+    }
+    if (activeSpell.visualKind === "lightning") {
+      this.drawLightningSpell(wizard, target, time, t);
+      return;
+    }
+    this.lightningBolt.setVisible(false);
+    this.emberLance.setVisible(false);
     if (this.phase === "ready") return;
     const elapsed = time - this.phaseStarted; const origin = { x: wizard.x + 32, y: wizard.y - 36 }; const destination = { x: target.x - 56, y: target.y - 5 };
-    if (this.phase === "charging") { const p = Phaser.Math.Clamp(elapsed / 460, 0, 1); this.drawMagicOrb(origin, 8 + p * 13, t, 1 - p * 0.2); for (let i = 0; i < 7; i += 1) { const a = t * 2 + i; const r = 18 + (i % 3) * 8; this.art.fillStyle(i % 2 ? 0xffa94d : 0x7ef5dc, 0.85); this.art.fillCircle(origin.x + Math.cos(a) * r, origin.y + Math.sin(a) * r, 2); } }
-    else if (this.phase === "flying") { const p = Phaser.Math.Clamp(elapsed / 650, 0, 1); const x = Phaser.Math.Interpolation.QuadraticBezier(p, origin.x, (origin.x + destination.x) / 2, destination.x); const y = Phaser.Math.Interpolation.QuadraticBezier(p, origin.y, Math.min(origin.y, destination.y) - 80, destination.y); for (let i = 8; i >= 1; i -= 1) { const trailP = Math.max(0, p - i * 0.018); const tx = Phaser.Math.Interpolation.QuadraticBezier(trailP, origin.x, (origin.x + destination.x) / 2, destination.x); const ty = Phaser.Math.Interpolation.QuadraticBezier(trailP, origin.y, Math.min(origin.y, destination.y) - 80, destination.y); this.art.fillStyle(i % 2 ? 0xff704d : 0xffd166, 0.1 + (9 - i) * 0.06); this.art.fillCircle(tx, ty, 4 + (9 - i) * 0.8); } this.drawMagicOrb({ x, y }, 16, t, 1); }
-    else if (this.phase === "impact") { const p = Phaser.Math.Clamp(elapsed / 720, 0, 1); const radius = 20 + p * 95; this.art.lineStyle(5 * (1 - p), 0xffd166, 0.9 * (1 - p)); this.art.strokeCircle(destination.x, destination.y, radius); this.art.lineStyle(2, 0xff704d, 0.65 * (1 - p)); this.art.strokeCircle(destination.x, destination.y, radius * 0.6); for (let i = 0; i < 12; i += 1) { const a = (Math.PI * 2 * i) / 12 + 0.2; const d = 25 + p * 75 + (i % 3) * 10; this.art.fillStyle(i % 3 === 0 ? 0xfff2bd : 0xff704d, (1 - p) * 0.85); this.art.fillCircle(destination.x + Math.cos(a) * d, destination.y + Math.sin(a) * d, 2 + (1 - p) * 2); } }
+    if (this.phase === "charging") {
+      const p = Phaser.Math.Clamp(elapsed / activeSpell.timings.charging, 0, 1);
+      this.drawMagicOrb(origin, 8 + p * 13, t, 1 - p * 0.2);
+      this.emberLance.setPosition(origin.x, origin.y).setRotation(0).setScale(0.12 + p * 0.2).setAlpha(0.18 + p * 0.62).setVisible(true);
+      for (let i = 0; i < 9; i += 1) {
+        const a = t * 2.4 + i * 0.72; const r = 18 + (i % 3) * 8 + Math.sin(t * 4 + i) * 3;
+        this.art.fillStyle(i % 2 ? 0xffa94d : 0x7ef5dc, 0.85); this.art.fillCircle(origin.x + Math.cos(a) * r, origin.y + Math.sin(a) * r, 2 + (i % 3));
+      }
+    } else if (this.phase === "flying") {
+      const p = Phaser.Math.Clamp(elapsed / activeSpell.timings.flying, 0, 1);
+      const x = Phaser.Math.Interpolation.QuadraticBezier(p, origin.x, (origin.x + destination.x) / 2, destination.x);
+      const y = Phaser.Math.Interpolation.QuadraticBezier(p, origin.y, Math.min(origin.y, destination.y) - 80, destination.y);
+      const angle = Phaser.Math.Angle.Between(origin.x, origin.y, destination.x, destination.y);
+      for (let i = 10; i >= 1; i -= 1) {
+        const trailP = Math.max(0, p - i * 0.018);
+        const tx = Phaser.Math.Interpolation.QuadraticBezier(trailP, origin.x, (origin.x + destination.x) / 2, destination.x);
+        const ty = Phaser.Math.Interpolation.QuadraticBezier(trailP, origin.y, Math.min(origin.y, destination.y) - 80, destination.y);
+        this.art.fillStyle(i % 2 ? 0xff704d : 0xffd166, 0.08 + (11 - i) * 0.055); this.art.fillCircle(tx, ty, 4 + (11 - i) * 0.85);
+        this.drawFlameRibbon(tx, ty, angle, 30 + (11 - i) * 2, t + i * 0.08, 0.32 + (11 - i) * 0.035);
+      }
+      this.drawMagicOrb({ x, y }, 14 + Math.sin(t * 11) * 2, t, 1);
+      this.emberLance.setPosition(x, y).setRotation(angle).setScale(0.28 + Math.sin(t * 13) * 0.018).setAlpha(0.96).setVisible(true);
+    } else if (this.phase === "impact") {
+      const p = Phaser.Math.Clamp(elapsed / activeSpell.timings.impact, 0, 1); const radius = 20 + p * 95;
+      this.art.lineStyle(5 * (1 - p), 0xffd166, 0.9 * (1 - p)); this.art.strokeCircle(destination.x, destination.y, radius);
+      this.art.lineStyle(2, 0xff704d, 0.65 * (1 - p)); this.art.strokeCircle(destination.x, destination.y, radius * 0.6);
+      for (let i = 0; i < 18; i += 1) {
+        const a = (Math.PI * 2 * i) / 18 + 0.2; const d = 25 + p * 75 + (i % 3) * 10;
+        this.art.fillStyle(i % 3 === 0 ? 0xfff2bd : 0xff704d, (1 - p) * 0.85); this.art.fillCircle(destination.x + Math.cos(a) * d, destination.y + Math.sin(a) * d, 2 + (1 - p) * 2);
+      }
+    }
+  }
+
+  private drawLightningSpell(wizard: Point, target: Point, time: number, t: number) {
+    this.lightningBolt.setVisible(false);
+    if (this.phase === "ready") return;
+    const activeSpell = this.projectileSpell ?? this.spell;
+    const elapsed = time - this.phaseStarted; const origin = { x: wizard.x + 32, y: wizard.y - 36 }; const destination = { x: target.x - 56, y: target.y - 5 };
+    if (this.phase === "charging") {
+      const p = Phaser.Math.Clamp(elapsed / activeSpell.timings.charging, 0, 1);
+      this.drawElectricOrb(origin, 8 + p * 13, t, 1 - p * 0.2);
+      this.lightningBolt.setPosition(origin.x, origin.y).setRotation(-0.08).setScale(0.1 + p * 0.22).setAlpha(0.18 + p * 0.62).setVisible(true);
+      for (let i = 0; i < 7; i += 1) {
+        const a = t * 3.2 + i * 0.9; const r = 18 + (i % 3) * 8 + Math.sin(t * 5 + i) * 3;
+        const spark = { x: origin.x + Math.cos(a) * r, y: origin.y + Math.sin(a) * r };
+        this.drawElectricArc(origin, spark, t + i, 0.42);
+      }
+    } else if (this.phase === "flying") {
+      const p = Phaser.Math.Clamp(elapsed / activeSpell.timings.flying, 0, 1);
+      const point = (progress: number) => ({
+        x: Phaser.Math.Interpolation.QuadraticBezier(progress, origin.x, (origin.x + destination.x) / 2, destination.x),
+        y: Phaser.Math.Interpolation.QuadraticBezier(progress, origin.y, Math.min(origin.y, destination.y) - 80, destination.y),
+      });
+      const current = point(p);
+      const angle = Phaser.Math.Angle.Between(origin.x, origin.y, destination.x, destination.y);
+      for (let i = 11; i >= 1; i -= 1) {
+        const trailP = Math.max(0, p - i * 0.018);
+        const trail = point(trailP);
+        const previous = point(Math.max(0, trailP - 0.05));
+        this.art.fillStyle(i % 2 ? 0x6685ff : 0xb8f5ff, 0.06 + (12 - i) * 0.045); this.art.fillCircle(trail.x, trail.y, 3 + (12 - i) * 0.9);
+        this.drawElectricArc(previous, trail, t + i * 0.13, 0.22 + (12 - i) * 0.035);
+      }
+      this.drawElectricOrb(current, 14 + Math.sin(t * 17) * 2, t, 1);
+      this.lightningBolt.setPosition(current.x, current.y).setRotation(angle).setScale(0.28 + Math.sin(t * 18) * 0.018).setAlpha(0.96).setVisible(true);
+    } else if (this.phase === "impact") {
+      const p = Phaser.Math.Clamp(elapsed / activeSpell.timings.impact, 0, 1); const radius = 20 + p * 95;
+      this.art.lineStyle(6 * (1 - p), 0xb7f7ff, 0.92 * (1 - p)); this.art.strokeCircle(destination.x, destination.y, radius);
+      this.art.lineStyle(2, 0x728bff, 0.75 * (1 - p)); this.art.strokeCircle(destination.x, destination.y, radius * 0.62);
+      for (let i = 0; i < 10; i += 1) {
+        const a = (Math.PI * 2 * i) / 10 + t * 0.6; const d = 28 + p * 82 + (i % 3) * 10;
+        const end = { x: destination.x + Math.cos(a) * d, y: destination.y + Math.sin(a) * d };
+        this.drawElectricArc(destination, end, t + i * 0.6, (1 - p) * 0.82);
+      }
+    }
+  }
+
+  private drawFlameRibbon(x: number, y: number, angle: number, length: number, time: number, alpha: number) {
+    const ux = Math.cos(angle); const uy = Math.sin(angle); const vx = -uy; const vy = ux;
+    const wave = Math.sin(time * 8) * 3;
+    this.art.lineStyle(10, 0xff5b31, alpha * 0.14); this.art.lineBetween(x - ux * length, y - uy * length, x, y);
+    this.art.lineStyle(4, 0xffa33c, alpha * 0.5); this.art.lineBetween(x - ux * length + vx * wave, y - uy * length + vy * wave, x - ux * 4, y - uy * 4);
+    this.art.lineStyle(1.5, 0xfff2bd, alpha * 0.8); this.art.lineBetween(x - ux * (length * 0.72) - vx * wave, y - uy * (length * 0.72) - vy * wave, x - ux * 8, y - uy * 8);
+  }
+
+  private drawElectricArc(start: Point, end: Point, seed: number, alpha: number) {
+    const dx = end.x - start.x; const dy = end.y - start.y; const length = Math.hypot(dx, dy) || 1;
+    const normal = { x: -dy / length, y: dx / length };
+    const points = [start];
+    for (let index = 1; index < 5; index += 1) {
+      const progress = index / 5;
+      const jitter = Math.sin(seed * 6.7 + index * 3.9) * Math.min(13, length * 0.22);
+      points.push({ x: start.x + dx * progress + normal.x * jitter, y: start.y + dy * progress + normal.y * jitter });
+    }
+    points.push(end);
+    const drawPath = () => {
+      this.art.beginPath();
+      this.art.moveTo(points[0].x, points[0].y);
+      points.slice(1).forEach((point) => this.art.lineTo(point.x, point.y));
+      this.art.strokePath();
+    };
+    this.art.lineStyle(10, 0x586fff, alpha * 0.15); drawPath();
+    this.art.lineStyle(3, 0x5acbff, alpha * 0.72); drawPath();
+    this.art.lineStyle(1, 0xf2ffff, alpha * 0.98); drawPath();
   }
 
   private drawMagicOrb(p: Point, radius: number, t: number, alpha: number) {
     const g = this.art; g.fillStyle(0xff704d, 0.1 * alpha); g.fillCircle(p.x, p.y, radius * 2.8); g.fillStyle(0xffa94d, 0.28 * alpha); g.fillCircle(p.x, p.y, radius * 1.6); g.fillStyle(0xff704d, 0.95 * alpha); g.fillCircle(p.x, p.y, radius); g.fillStyle(0xfff2bd, alpha); g.fillCircle(p.x - 3, p.y - 3, radius * 0.45); g.lineStyle(2, 0xffd166, 0.8 * alpha); g.strokeCircle(p.x, p.y, radius + Math.sin(t * 8) * 2);
   }
+
+  private drawElectricOrb(p: Point, radius: number, t: number, alpha: number) {
+    const g = this.art; g.fillStyle(0x566dff, 0.1 * alpha); g.fillCircle(p.x, p.y, radius * 2.8); g.fillStyle(0x63d9ff, 0.26 * alpha); g.fillCircle(p.x, p.y, radius * 1.6); g.fillStyle(0x5296ff, 0.95 * alpha); g.fillCircle(p.x, p.y, radius); g.fillStyle(0xf3ffff, alpha); g.fillCircle(p.x - 3, p.y - 3, radius * 0.45); g.lineStyle(2, 0x9aeaff, 0.8 * alpha); g.strokeCircle(p.x, p.y, radius + Math.sin(t * 12) * 2);
+  }
+
+  private drawShield(wizard: Point, time: number, t: number) {
+    this.shield.setVisible(false);
+    if (!this.shieldActive && time >= this.shieldBlockedUntil) return;
+    const blocked = !this.shieldActive;
+    const remaining = this.shieldActive ? Phaser.Math.Clamp((this.shieldUntil - time) / 500, 0, 1) : Phaser.Math.Clamp((this.shieldBlockedUntil - time) / 440, 0, 1);
+    const pulse = 1 + Math.sin(t * 8) * 0.025;
+    this.shield.setPosition(wizard.x, wizard.y - 36).setScale((0.96 + remaining * 0.08) * pulse).setAlpha(blocked ? remaining * 0.9 : 0.88).setVisible(true);
+    if (blocked) {
+      this.art.lineStyle(4 * remaining, 0xf3ffff, remaining * 0.9);
+      this.art.strokeCircle(wizard.x, wizard.y - 36, 92 + (1 - remaining) * 20);
+      for (let index = 0; index < 8; index += 1) {
+        const angle = (Math.PI * 2 * index) / 8 + t;
+        this.art.lineBetween(wizard.x, wizard.y - 36, wizard.x + Math.cos(angle) * 112, wizard.y - 36 + Math.sin(angle) * 112);
+      }
+    }
+  }
 }
 
-export function createArenaGame(parent: HTMLElement, callbacks: ArenaCallbacks) {
-  return new Phaser.Game({ type: Phaser.AUTO, parent, backgroundColor: "#090d24", scene: new ArenaScene(callbacks), scale: { mode: Phaser.Scale.RESIZE, width: window.innerWidth, height: window.innerHeight }, render: { antialias: true, pixelArt: false } });
+export function createArenaGame(parent: HTMLElement, callbacks: ArenaCallbacks, spellId: SpellId = "ember-lance") {
+  return new Phaser.Game({ type: Phaser.AUTO, parent, backgroundColor: "#090d24", scene: new ArenaScene(callbacks, spellId), scale: { mode: Phaser.Scale.RESIZE, width: window.innerWidth, height: window.innerHeight }, render: { antialias: true, pixelArt: false } });
 }
