@@ -1,7 +1,5 @@
 import {
-  clampProgress,
   makeRecognition,
-  runePathLength,
   type RuneRecognition,
   type RuneStroke,
 } from "@/game/recognition/shared";
@@ -12,8 +10,8 @@ const MIN_SIDE = 4;
 
 /** Recognize one closed, four-corner square for the Aegis ward. */
 export function recognizeAegisStrokes(strokes: RuneStroke[], arenaDimension: number): RuneRecognition {
-  void arenaDimension;
-  const minimumLength = MIN_PATH_LENGTH;
+  const dimension = Math.max(1, arenaDimension);
+  const minimumLength = 0;
   const minimumStrokeLengths = [minimumLength];
   const makeAegisRecognition = (values: Parameters<typeof makeRecognition>[3]) =>
     makeRecognition(strokes, minimumLength, minimumStrokeLengths, values, undefined, undefined, 1);
@@ -26,9 +24,8 @@ export function recognizeAegisStrokes(strokes: RuneStroke[], arenaDimension: num
   }
 
   const points = strokes[0].points;
-  const pathLength = runePathLength(points);
-  if (points.length < 5 || pathLength < minimumLength) {
-    return makeAegisRecognition({ recognized: false, stage: "first-stroke", progress: clampProgress(pathLength / minimumLength), reason: "too-short", hint: "TRACE A CLOSED SQUARE" });
+  if (points.length < 5) {
+    return makeAegisRecognition({ recognized: false, stage: "first-stroke", progress: 0, reason: "too-short", hint: "TRACE A CLOSED SQUARE" });
   }
 
   const start = points[0];
@@ -71,7 +68,7 @@ export function recognizeAegisStrokes(strokes: RuneStroke[], arenaDimension: num
   const aspectRatio = width / Math.max(height, 1);
   const startsOnPerimeter = start.x <= minX + width * 0.25 || start.x >= maxX - width * 0.25 || start.y <= minY + height * 0.25 || start.y >= maxY - height * 0.25;
   const averageAxisAlignment = axisAlignmentTotal / Math.max(axisAlignmentSamples, 1);
-  const isSquareProportioned = aspectRatio >= 0.7 && aspectRatio <= 1.3 && Math.min(width, height) >= MIN_SIDE;
+  const isSquareProportioned = aspectRatio >= 0.7 && aspectRatio <= 1.3;
   if (isClosed && startsOnPerimeter && axisChanges >= 3 && sharpTurns >= 2 && averageAxisAlignment >= 0.86 && isSquareProportioned) {
     return makeAegisRecognition({ recognized: true, stage: "complete", progress: 1, hint: "AEGIS SQUARE ACCEPTED" });
   }

@@ -85,14 +85,11 @@ function estimateCircle(stroke: RuneStroke): CircleEstimate | null {
   };
 }
 
-/** Shape-quality only — no arena-scaled size floor so small rings still match. */
-function isCircle(estimate: CircleEstimate) {
-  const minimumRadius = 3;
-  const closureTolerance = Math.max(4, estimate.radius * 0.45);
+function isCircle(estimate: CircleEstimate, dimension: number) {
+  const closureTolerance = Math.max(14, dimension * 0.035);
   const circumferenceRatio = estimate.pathLength / Math.max(FULL_TURN * estimate.radius, 1);
   return (
     estimate.sharpTurns <= 1 &&
-    estimate.radius >= minimumRadius &&
     estimate.closureDistance <= closureTolerance &&
     estimate.circularity <= 0.34 &&
     circumferenceRatio >= 0.68 &&
@@ -116,11 +113,11 @@ function makeFreezeRecognition(
 
 /** Recognize exactly two nearby, closed circular strokes with a shared center. */
 export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: number): RuneRecognition {
-  void arenaDimension;
-  // Reporting floor only — recognition no longer rejects small rings by length.
-  const minimumLength = 24;
-  const minimumStrokeLength = 12;
-  const minimumStrokeLengths = [minimumStrokeLength, minimumStrokeLength];
+  const dimension = Math.max(1, arenaDimension);
+  const minimumLength = 0;
+  const minimumStrokeLengths = [0, 0];
+  const positionTolerance = Math.max(36, dimension * 0.1);
+  const centerTolerance = Math.max(24, dimension * 0.065);
 
   if (strokes.length === 0) {
     return makeFreezeRecognition(strokes, minimumLength, minimumStrokeLengths, {
@@ -146,7 +143,7 @@ export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: nu
   for (let index = 0; index < strokes.length; index += 1) {
     const stroke = strokes[index];
     const circle = estimateCircle(stroke);
-    if (!circle || !isCircle(circle)) {
+    if (!circle || !isCircle(circle, dimension)) {
       return makeFreezeRecognition(strokes, minimumLength, minimumStrokeLengths, {
         recognized: false,
         stage: index === 0 ? "first-stroke" : "second-stroke",
