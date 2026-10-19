@@ -389,6 +389,7 @@ button { font: inherit; }
 .spellbook-rune-svg-lightning { color: #8feaff; }
 .spellbook-rune-svg-aegis { color: #72e6d3; }
 .spellbook-rune-svg-freeze { color: #9ba8ff; }
+.spellbook-rune-svg-ghost-portal { color: #c3a7ff; }
 .spellbook-rune-card p { grid-column: 1 / -1; margin: 5px 0 0; color: #8fe0d0; font-family: var(--font-geist-mono), monospace; font-size: 7px; letter-spacing: .06em; line-height: 1.5; }
 .spellbook-quote { position: relative; z-index: 1; max-width: 350px; margin: 29px 0 0; color: #4e4c58; font-family: Georgia, serif; font-size: 15px; font-style: italic; line-height: 1.45; }
 .spellbook-spine { position: absolute; top: 0; bottom: 0; left: 50%; z-index: 3; width: 23px; border-right: 1px solid rgba(70,49,38,.3); border-left: 1px solid rgba(255,246,210,.35); background: linear-gradient(90deg, rgba(65,46,41,.28), rgba(255,247,210,.38) 45%, rgba(65,46,41,.22)); box-shadow: 0 0 17px rgba(44,35,38,.2); transform: translateX(-50%); pointer-events: none; }

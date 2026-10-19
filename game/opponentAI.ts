@@ -42,6 +42,7 @@ export function decideOpponentAction(state: OpponentAIState, spell: SpellData): 
   const lightning = availableSpells.find((candidate) => candidate.id === "lightning");
   const aegis = availableSpells.find((candidate) => candidate.id === "aegis");
   const freeze = availableSpells.find((candidate) => (candidate.id as string) === "freeze");
+  const ghostPortal = availableSpells.find((candidate) => (candidate.id as string) === "ghost-portal");
   const playerIsCasting = state.playerPhase === "charging" || state.playerPhase === "flying";
   const tacticalChoices: { spell: SpellData; reason: OpponentDecision["reason"] }[] = [];
 
@@ -53,6 +54,10 @@ export function decideOpponentAction(state: OpponentAIState, spell: SpellData): 
   // active player ward because the ward already reduces its effect.
   if (freeze && playerIsCasting && !state.playerShieldActive) {
     tacticalChoices.push({ spell: freeze, reason: "pressure" });
+  }
+  // The portal punishes an exposed caster by stripping their remaining mana.
+  if (ghostPortal && playerIsCasting && !state.playerShieldActive) {
+    tacticalChoices.push({ spell: ghostPortal, reason: "pressure" });
   }
   if (lightning && state.playerHealth <= OPPONENT_AI_CONFIG.pressureHealth) {
     tacticalChoices.push({ spell: lightning, reason: "execute" });

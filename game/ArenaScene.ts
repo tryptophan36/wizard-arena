@@ -46,6 +46,10 @@ function isFreezeSpell(spell: SpellData) {
   return (spell.visualKind as string) === "freeze";
 }
 
+function isGhostPortalSpell(spell: SpellData) {
+  return (spell.visualKind as string) === "ghost-portal";
+}
+
 function getFreezeDuration(spell: SpellData) {
   const duration = (spell as SpellData & { freezeDurationMs?: unknown }).freezeDurationMs;
   return typeof duration === "number" && Number.isFinite(duration) && duration > 0 ? duration : DEFAULT_FREEZE_DURATION_MS;
@@ -267,6 +271,10 @@ export class ArenaScene extends Phaser.Scene {
           this.targetHealth = Math.max(0, this.targetHealth - activeSpell.damage);
           if (activeSpell.stunDurationMs) this.stunOpponent(time, activeSpell.stunDurationMs);
           if (isFreezeSpell(activeSpell)) this.freezeOpponent(time, getFreezeDuration(activeSpell));
+          if (isGhostPortalSpell(activeSpell)) {
+            this.enemyMana = 0;
+            this.callbacks.onEnemyManaChange(this.enemyMana);
+          }
         }
       }
       this.callbacks.onTargetHealthChange(this.targetHealth); this.callbacks.onPhaseChange("impact");
@@ -325,6 +333,10 @@ export class ArenaScene extends Phaser.Scene {
         this.playerHealth = Math.max(0, this.playerHealth - enemySpell.damage);
         this.callbacks.onPlayerHealthChange(this.playerHealth);
         if (isFreezeSpell(enemySpell)) this.freezePlayer(time, getFreezeDuration(enemySpell));
+        if (isGhostPortalSpell(enemySpell)) {
+          this.mana = 0;
+          this.callbacks.onManaChange(this.mana);
+        }
       }
       if (this.playerHealth <= 0) this.finishGame("defeat");
     } else if (this.enemyPhase === "impact" && enemySpell && time - this.enemyPhaseStarted >= enemySpell.timings.impact) {
@@ -588,7 +600,7 @@ export class ArenaScene extends Phaser.Scene {
   private drawTarget(p: Point, t: number, hitT: number) {
     const g = this.art; const x = p.x; const y = p.y; const flash = this.phase === "impact" ? 0.55 * (1 - hitT) : 0; const activeSpell = this.projectileSpell ?? this.spell;
     g.fillStyle(0x050819, 0.6); g.fillEllipse(x, y + 48, 150, 30); g.fillStyle(0x3e4669, 1); g.beginPath(); g.moveTo(x - 48, y + 37); g.lineTo(x - 43, y - 23); g.lineTo(x - 25, y - 48); g.lineTo(x + 26, y - 48); g.lineTo(x + 47, y - 18); g.lineTo(x + 41, y + 39); g.closePath(); g.fillPath(); g.fillStyle(0x596487, 1); g.fillTriangle(x - 39, y - 19, x - 20, y - 47, x - 8, y - 18); g.fillTriangle(x + 4, y - 45, x + 26, y - 42, x + 39, y - 16); g.fillStyle(0x273052, 1); g.fillCircle(x - 20, y - 9, 6); g.fillCircle(x + 20, y - 9, 6); g.fillStyle(0xffa94d, 1); g.fillCircle(x - 20, y - 9, 3); g.fillCircle(x + 20, y - 9, 3); g.fillStyle(0xd86f4e, 0.9); g.fillCircle(x, y + 12, 13); g.fillStyle(0xffca63, 0.85); g.fillCircle(x, y + 12, 7 + Math.sin(t * 5) * 1.5); g.fillStyle(0x1c2446, 1); g.fillRect(x - 48, y + 30, 96, 9); g.fillStyle(0x63e3c9, 1); g.fillRect(x - 44, y + 32, 88 * (this.targetHealth / MAX_HEALTH), 5);
-    if (flash > 0) { g.fillStyle(activeSpell.visualKind === "lightning" ? 0xd9faff : isFreezeSpell(activeSpell) ? 0xb7f7ff : 0xfff4cf, flash); g.fillCircle(x, y, 62 * flash + 18); }
+    if (flash > 0) { g.fillStyle(activeSpell.visualKind === "lightning" ? 0xd9faff : isFreezeSpell(activeSpell) ? 0xb7f7ff : isGhostPortalSpell(activeSpell) ? 0xd7c2ff : 0xfff4cf, flash); g.fillCircle(x, y, 62 * flash + 18); }
   }
 
   private drawSpell(wizard: Point, target: Point, time: number, t: number) {
@@ -600,6 +612,10 @@ export class ArenaScene extends Phaser.Scene {
     }
     if (activeSpell.visualKind === "lightning") {
       this.drawLightningSpell(wizard, target, time, t);
+      return;
+    }
+    if (isGhostPortalSpell(activeSpell)) {
+      this.drawPortalSpell(wizard, target, time, t, false);
       return;
     }
     if (isFreezeSpell(activeSpell)) {
@@ -657,6 +673,10 @@ export class ArenaScene extends Phaser.Scene {
     }
     if (isFreezeSpell(activeSpell)) {
       this.drawFreezeSpell(wizard, target, time, t, true);
+      return;
+    }
+    if (isGhostPortalSpell(activeSpell)) {
+      this.drawPortalSpell(wizard, target, time, t, true);
       return;
     }
     const elapsed = time - this.enemyPhaseStarted;
@@ -814,6 +834,111 @@ export class ArenaScene extends Phaser.Scene {
         this.art.lineBetween(destination.x, destination.y, destination.x + Math.cos(angle) * distance, destination.y + Math.sin(angle) * distance);
       }
     }
+  }
+
+  private drawPortalSpell(wizard: Point, target: Point, time: number, t: number, enemy: boolean) {
+    const activeSpell = enemy ? this.enemyProjectileSpell : this.projectileSpell ?? this.spell;
+    if (!activeSpell) return;
+    this.emberLance.setVisible(false);
+    this.enemyEmberLance.setVisible(false);
+    this.lightningBolt.setVisible(false);
+    const elapsed = time - (enemy ? this.enemyPhaseStarted : this.phaseStarted);
+    const phase = enemy ? this.enemyPhase : this.phase;
+    const origin = enemy ? { x: target.x - 32, y: target.y - 36 } : { x: wizard.x + 32, y: wizard.y - 36 };
+    const destination = enemy ? { x: wizard.x + 56, y: wizard.y - 41 } : { x: target.x - 56, y: target.y - 5 };
+    const direction = enemy ? Math.PI : 0;
+
+    if (phase === "charging") {
+      const progress = Phaser.Math.Clamp(elapsed / activeSpell.timings.charging, 0, 1);
+      this.drawPortalGate(origin, 24 + progress * 23, t, 0.35 + progress * 0.5, direction);
+      this.drawSpectralOrb(origin, 8 + progress * 12, t, 0.7);
+      return;
+    }
+    if (phase === "flying") {
+      const progress = Phaser.Math.Clamp(elapsed / activeSpell.timings.flying, 0, 1);
+      const point = (value: number) => ({
+        x: Phaser.Math.Interpolation.QuadraticBezier(value, origin.x, (origin.x + destination.x) / 2, destination.x),
+        y: Phaser.Math.Interpolation.QuadraticBezier(value, origin.y, Math.min(origin.y, destination.y) - 90, destination.y),
+      });
+      const current = point(progress);
+      for (let index = 8; index >= 1; index -= 1) {
+        const trailProgress = Math.max(0, progress - index * 0.025);
+        const trail = point(trailProgress);
+        this.art.fillStyle(index % 2 ? 0xb898ff : 0xe5d8ff, 0.08 + (9 - index) * 0.05);
+        this.art.fillCircle(trail.x, trail.y, 4 + (9 - index) * 0.75);
+      }
+      this.drawPortalGate(current, 23 + Math.sin(t * 8) * 3, t, 0.8, direction);
+      this.drawSpectralOrb(current, 13 + Math.sin(t * 11) * 2, t, 1);
+      return;
+    }
+    if (phase !== "impact") return;
+
+    const progress = Phaser.Math.Clamp(elapsed / activeSpell.timings.impact, 0, 1);
+    this.drawPortalGate(destination, 45 + Math.sin(t * 7) * 3, t, 0.95 * (1 - progress * 0.58), direction);
+    for (let index = 0; index < 3; index += 1) {
+      const angle = -Math.PI / 2 + index * (Math.PI * 2 / 3) + direction;
+      const ghostProgress = Phaser.Math.Clamp(progress * 1.35 - index * 0.08, 0, 1);
+      const distanceFromPortal = 12 + ghostProgress * 54;
+      const ghost = {
+        x: destination.x + Math.cos(angle) * distanceFromPortal,
+        y: destination.y + Math.sin(angle) * distanceFromPortal,
+      };
+      const ghostAlpha = (1 - Math.max(0, progress - 0.78) / 0.22) * 0.92;
+      this.drawGhost(ghost, 15 + index * 1.5, t + index * 0.55, ghostAlpha);
+      if (ghostProgress > 0.35) {
+        this.art.lineStyle(2, 0xd8c8ff, (1 - progress) * 0.42);
+        this.art.lineBetween(ghost.x, ghost.y + 6, destination.x, destination.y);
+      }
+    }
+  }
+
+  private drawPortalGate(center: Point, radius: number, t: number, alpha: number, rotation: number) {
+    const g = this.art;
+    g.fillStyle(0x8d70ff, alpha * 0.08); g.fillCircle(center.x, center.y, radius * 1.8);
+    for (let index = 0; index < 3; index += 1) {
+      const ringRadius = radius * (1 - index * 0.22);
+      g.lineStyle(4 - index, index === 0 ? 0x8068ed : index === 1 ? 0xb99dff : 0xf0e8ff, alpha * (0.78 - index * 0.12));
+      g.strokeCircle(center.x, center.y, ringRadius + Math.sin(t * (2.5 + index) + rotation) * 2);
+    }
+    for (let index = 0; index < 6; index += 1) {
+      const angle = rotation + t * 0.7 + index * Math.PI / 3;
+      const inner = radius * 0.7;
+      const outer = radius * 1.05;
+      g.lineStyle(2, 0xe6dcff, alpha * 0.6);
+      g.lineBetween(center.x + Math.cos(angle) * inner, center.y + Math.sin(angle) * inner, center.x + Math.cos(angle) * outer, center.y + Math.sin(angle) * outer);
+    }
+  }
+
+  private drawSpectralOrb(center: Point, radius: number, t: number, alpha: number) {
+    const g = this.art;
+    g.fillStyle(0x8068ed, alpha * 0.12); g.fillCircle(center.x, center.y, radius * 2.9);
+    g.fillStyle(0xb99dff, alpha * 0.32); g.fillCircle(center.x, center.y, radius * 1.6);
+    g.fillStyle(0x8068ed, alpha * 0.95); g.fillCircle(center.x, center.y, radius);
+    g.fillStyle(0xf0e8ff, alpha); g.fillCircle(center.x - 3, center.y - 3, radius * 0.42);
+    g.lineStyle(2, 0xe0d3ff, alpha * 0.8); g.strokeCircle(center.x, center.y, radius + Math.sin(t * 10) * 2);
+  }
+
+  private drawGhost(center: Point, size: number, t: number, alpha: number) {
+    if (alpha <= 0) return;
+    const g = this.art;
+    const x = center.x;
+    const y = center.y + Math.sin(t * 7) * 2;
+    g.fillStyle(0x8068ed, alpha * 0.16); g.fillCircle(x, y + size * 0.55, size * 1.7);
+    g.fillStyle(0xd9ccff, alpha * 0.9); g.fillCircle(x, y - size * 0.48, size * 0.58);
+    g.fillStyle(0xb49cff, alpha * 0.82);
+    g.beginPath();
+    g.moveTo(x - size * 0.62, y - size * 0.14);
+    g.lineTo(x - size * 0.52, y + size * 0.78);
+    g.lineTo(x - size * 0.2, y + size * 0.57);
+    g.lineTo(x, y + size * 0.82);
+    g.lineTo(x + size * 0.2, y + size * 0.57);
+    g.lineTo(x + size * 0.52, y + size * 0.78);
+    g.lineTo(x + size * 0.62, y - size * 0.14);
+    g.closePath();
+    g.fillPath();
+    g.fillStyle(0x261c63, alpha);
+    g.fillCircle(x - size * 0.2, y - size * 0.5, Math.max(1.5, size * 0.12));
+    g.fillCircle(x + size * 0.2, y - size * 0.5, Math.max(1.5, size * 0.12));
   }
 
   private drawFreezeStatus(wizard: Point, target: Point, time: number, t: number) {

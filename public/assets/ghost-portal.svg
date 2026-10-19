@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320" fill="none">
+  <title>Ghost Portal</title>
+  <desc>Three luminous portal rings summoning three spectral ghosts.</desc>
+  <defs>
+    <radialGradient id="portal-aura" cx="0" cy="0" r="1" gradientTransform="translate(160 160) rotate(90) scale(142)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D6C8FF" stop-opacity="0.3" />
+      <stop offset="0.5" stop-color="#9C7BFF" stop-opacity="0.17" />
+      <stop offset="1" stop-color="#5C4AC7" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="portal-ring" x1="45" y1="252" x2="270" y2="65" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6B55DD" />
+      <stop offset="0.45" stop-color="#B89BFF" />
+      <stop offset="0.75" stop-color="#F2E9FF" />
+      <stop offset="1" stop-color="#755CF2" />
+    </linearGradient>
+    <linearGradient id="ghost-body" x1="126" y1="106" x2="192" y2="239" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7F2FF" />
+      <stop offset="0.45" stop-color="#CBB9FF" />
+      <stop offset="1" stop-color="#7864D9" stop-opacity="0.35" />
+    </linearGradient>
+    <filter id="portal-glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="9" />
+    </filter>
+  </defs>
+  <circle cx="160" cy="160" r="137" fill="url(#portal-aura)" />
+  <g opacity="0.32" filter="url(#portal-glow)" stroke="#B89BFF" stroke-width="12">
+    <circle cx="160" cy="160" r="112" />
+    <circle cx="160" cy="160" r="76" />
+    <circle cx="160" cy="160" r="42" />
+  </g>
+  <g stroke="url(#portal-ring)" stroke-linecap="round">
+    <circle cx="160" cy="160" r="112" stroke-width="6" stroke-dasharray="44 17" />
+    <circle cx="160" cy="160" r="76" stroke-width="5" stroke-dasharray="28 12" />
+    <circle cx="160" cy="160" r="42" stroke-width="4" stroke-dasharray="18 9" />
+  </g>
+  <g fill="url(#ghost-body)" stroke="#F3ECFF" stroke-width="3">
+    <path d="M102 151c0-25 17-43 36-43s36 18 36 43v43l-12-9-12 13-12-13-12 13-12-13-12 9v-43Z" />
+    <path d="M134 94c0-23 16-40 34-40s34 17 34 40v47l-11-10-12 14-11-14-12 14-11-14-11 10V94Z" transform="translate(38 38) scale(.72)" />
+    <path d="M136 175c0-21 14-37 30-37s30 16 30 37v37l-10-9-10 12-10-12-10 12-10-12-10 9v-37Z" transform="translate(-17 -38) scale(.63)" />
+  </g>
+  <g fill="#241B59">
+    <circle cx="126" cy="151" r="4" /><circle cx="149" cy="151" r="4" />
+    <circle cx="184" cy="115" r="3" /><circle cx="201" cy="115" r="3" />
+    <circle cx="139" cy="154" r="2.5" /><circle cx="153" cy="154" r="2.5" />
+  </g>
+</svg>

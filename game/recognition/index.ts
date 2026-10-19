@@ -24,6 +24,7 @@ export {
   recognizeFreezeRune,
   recognizeFreezeStrokes,
 } from "@/game/recognition/freeze";
+export { GHOST_PORTAL_RUNE_HINT, recognizeGhostPortalStrokes } from "@/game/recognition/portal";
 export {
   EMBER_LANCE_RUNE_HINT,
   runePathLength,

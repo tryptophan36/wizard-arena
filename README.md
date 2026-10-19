@@ -2,7 +2,7 @@
 
 Wizard Arena is a Next.js browser-game project where players cast spells as
 wizards and defeat intelligent computer opponents. The current game flow has
-a home menu, a computer duel, a free-cast practice range, a spell book, four
+a home menu, a computer duel, a free-cast practice range, a spell book, five
 drawable spells, and a victory/defeat loop for duels.
 
 ## Game flow
@@ -14,9 +14,10 @@ drawable spells, and a victory/defeat loop for duels.
 
 The computer opponent evaluates its mana, cooldown, health, projectile state,
 and the player's shield before choosing between Ember Lance, Lightning, Freeze,
-and Aegis. A successful Lightning hit deals 20 damage and stuns the computer
-for 1.8 seconds, interrupting any active cast. Freeze binds the target for 2.5
-seconds. It uses deterministic timing and local simulation; there is no network
+Aegis, and Ghost Portal. A successful Lightning hit deals 20 damage and stuns
+the computer for 1.8 seconds, interrupting any active cast. Freeze binds the
+target for 2.5 seconds. Ghost Portal deals 10 damage and empties the target's
+mana. It uses deterministic timing and local simulation; there is no network
 or multiplayer implementation yet.
 
 ## First playable slice
@@ -28,8 +29,11 @@ or multiplayer implementation yet.
 - Draw Aegis as one closed square while a projectile is travelling to raise a
   ward and absorb that impact; do not add the former crossing diagonals.
 - Draw Freeze as two nearby, concentric closed circles, one circle per stroke;
-  it costs 60 mana, deals no damage, and freezes the target for 2.5 seconds.
+  it costs 50 mana, deals no damage, and freezes the target for 2.5 seconds.
   An active Aegis ward consumes itself and reduces that freeze to 1 second.
+- Draw Ghost Portal as three nearby, concentric closed circles, one circle per
+  stroke. It costs 50 mana, deals 10 damage, summons three attacking ghosts,
+  and drains the opponent's mana to zero on impact.
 - Select `LEARN IN ARENA` on a spell card to equip it with the matching symbol
   and gesture; opening `/` keeps Ember Lance equipped by default.
 - Open `/spells` or choose `SPELLBOOK` in the arena header to study the rune
