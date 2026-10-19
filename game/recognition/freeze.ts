@@ -85,14 +85,11 @@ function estimateCircle(stroke: RuneStroke): CircleEstimate | null {
   };
 }
 
-function isCircle(estimate: CircleEstimate, dimension: number, minimumLength: number) {
-  const minimumRadius = Math.max(16, dimension * 0.035);
+function isCircle(estimate: CircleEstimate, dimension: number) {
   const closureTolerance = Math.max(14, dimension * 0.035);
   const circumferenceRatio = estimate.pathLength / Math.max(FULL_TURN * estimate.radius, 1);
   return (
     estimate.sharpTurns <= 1 &&
-    estimate.radius >= minimumRadius &&
-    estimate.pathLength >= Math.min(minimumLength, Math.max(58, dimension * 0.055)) &&
     estimate.closureDistance <= closureTolerance &&
     estimate.circularity <= 0.34 &&
     circumferenceRatio >= 0.68 &&
@@ -117,9 +114,8 @@ function makeFreezeRecognition(
 /** Recognize exactly two nearby, closed circular strokes with a shared center. */
 export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: number): RuneRecognition {
   const dimension = Math.max(1, arenaDimension);
-  const minimumLength = Math.max(180, dimension * 0.2);
-  const minimumStrokeLength = Math.max(58, dimension * 0.055);
-  const minimumStrokeLengths = [minimumStrokeLength, minimumStrokeLength];
+  const minimumLength = 0;
+  const minimumStrokeLengths = [0, 0];
   const positionTolerance = Math.max(36, dimension * 0.1);
   const centerTolerance = Math.max(24, dimension * 0.065);
 
@@ -147,7 +143,7 @@ export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: nu
   for (let index = 0; index < strokes.length; index += 1) {
     const stroke = strokes[index];
     const circle = estimateCircle(stroke);
-    if (!circle || !isCircle(circle, dimension, minimumLength)) {
+    if (!circle || !isCircle(circle, dimension)) {
       return makeFreezeRecognition(strokes, minimumLength, minimumStrokeLengths, {
         recognized: false,
         stage: index === 0 ? "first-stroke" : "second-stroke",
@@ -208,17 +204,6 @@ export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: nu
       progress: 0.86,
       reason: "stroke-position",
       hint: !centersAreConcentric ? "KEEP BOTH CIRCLES CONCENTRIC" : "USE TWO DISTINCT RING SIZES",
-    });
-  }
-
-  const totalLength = circles.reduce((total, circle) => total + circle.pathLength, 0);
-  if (totalLength < minimumLength) {
-    return makeFreezeRecognition(strokes, minimumLength, minimumStrokeLengths, {
-      recognized: false,
-      stage: "failed",
-      progress: clampProgress(totalLength / minimumLength),
-      reason: "too-short",
-      hint: "DRAW TWO LARGER FROST CIRCLES",
     });
   }
 
