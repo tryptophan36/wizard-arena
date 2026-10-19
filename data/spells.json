@@ -87,9 +87,9 @@
     "description": "Binding rings of glacial stillness.",
     "effect": "Control. Two concentric ice circles lock around the target and freeze it for 2.5 seconds (2500ms); Aegis reduces the freeze to 1 second.",
     "manaCost": 50,
-    "cooldown": 1,
+    "cooldown": 0.5,
     "damage": 0,
-    "freezeDurationMs": 2500,
+    "freezeDurationMs": 3000,
     "difficulty": "MASTER",
     "timings": { "charging": 520, "flying": 980, "impact": 680 },
     "tags": ["CONTROL", "ICE", "SINGLE TARGET"],
@@ -109,12 +109,12 @@
   {
     "id": "ghost-portal",
     "name": "GHOST PORTAL",
-    "symbol": "◉◉◉",
+    "symbol": "◯  ◯  ◯",
     "school": "VEIL GATE",
     "description": "A haunted breach that releases three hungry spirits.",
-    "effect": "Summon three ghosts from a portal at the target. Their assault deals 10 damage and drains the opponent's mana completely.",
+    "effect": "Open a portal beside the caster. Three ghosts cross the arena, deal 10 damage, and drain the opponent's mana completely.",
     "manaCost": 50,
-    "cooldown": 4,
+    "cooldown": 1,
     "damage": 10,
     "manaDrain": 100,
     "summonCount": 3,
@@ -127,11 +127,11 @@
     "gesture": {
       "type": "three-stroke",
       "recognizer": "ghost-portal",
-      "hint": "STROKE 1: OUTER CIRCLE · STROKE 2: MIDDLE CIRCLE · STROKE 3: INNER CIRCLE",
+      "hint": "STROKE 1: CIRCLE · STROKE 2: SEPARATE CIRCLE · STROKE 3: SEPARATE CIRCLE",
       "steps": [
-        { "number": "01", "title": "Open the outer gate", "description": "Trace the largest closed circle to tear open the boundary between worlds.", "gesture": "OUTER  ◯  CLOSE" },
-        { "number": "02", "title": "Call the middle ring", "description": "Draw a smaller circle on the same center to give the portal depth.", "gesture": "MIDDLE  ◯  CLOSE" },
-        { "number": "03", "title": "Seal the ghost path", "description": "Finish with the smallest concentric circle and release the summoned spirits.", "gesture": "INNER  ◯  RELEASE" }
+        { "number": "01", "title": "Mark the first gate", "description": "Trace one clean closed circle anywhere in the casting field.", "gesture": "CIRCLE 1  ◯  CLOSE" },
+        { "number": "02", "title": "Split the veil", "description": "Draw a second closed circle clearly apart from the first.", "gesture": "CIRCLE 2  ◯  CLOSE" },
+        { "number": "03", "title": "Call the third spirit", "description": "Finish with a third separate circle to open the caster-side portal.", "gesture": "CIRCLE 3  ◯  RELEASE" }
       ]
     }
   }

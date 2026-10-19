@@ -10,7 +10,7 @@ import {
   type RuneStroke,
 } from "@/game/recognition/shared";
 
-export const GHOST_PORTAL_RUNE_HINT = "STROKE 1: OUTER CIRCLE · STROKE 2: MIDDLE CIRCLE · STROKE 3: INNER CIRCLE";
+export const GHOST_PORTAL_RUNE_HINT = "STROKE 1: CIRCLE · STROKE 2: SEPARATE CIRCLE · STROKE 3: SEPARATE CIRCLE";
 
 const FULL_TURN = Math.PI * 2;
 const CIRCLE_HINT = "EACH STROKE MUST BE ONE CLOSED CIRCLE";
@@ -101,15 +101,14 @@ function isCircle(estimate: CircleEstimate, dimension: number, minimumLength: nu
   );
 }
 
-/** Recognize exactly three nearby, closed circular strokes with a shared center. */
+/** Recognize exactly three separate, closed circular strokes. */
 export function recognizeGhostPortalStrokes(strokes: RuneStroke[], arenaDimension: number): RuneRecognition {
   const dimension = Math.max(1, arenaDimension);
   const expectedStrokes = 3;
   const minimumLength = Math.max(280, dimension * 0.3);
   const minimumStrokeLength = Math.max(58, dimension * 0.055);
   const minimumStrokeLengths = Array.from({ length: expectedStrokes }, () => minimumStrokeLength);
-  const positionTolerance = Math.max(36, dimension * 0.1);
-  const centerTolerance = Math.max(24, dimension * 0.065);
+  const minimumCenterSeparation = Math.max(28, dimension * 0.08);
   const makePortalRecognition = (
     values: Parameters<typeof makeRecognition>[3],
     pauseMs?: number,
@@ -139,35 +138,30 @@ export function recognizeGhostPortalStrokes(strokes: RuneStroke[], arenaDimensio
 
     if (index > 0) {
       const previous = strokes[index - 1];
-      const previousEnd = previous.points[previous.points.length - 1];
-      const currentStart = stroke.points[0];
-      const gap = distance(previousEnd, currentStart);
       const pauseMs = strokeStartTime(stroke) !== undefined && strokeEndTime(previous) !== undefined
         ? strokeStartTime(stroke)! - strokeEndTime(previous)!
         : undefined;
       if (pauseMs !== undefined && pauseMs < 0) {
-        return makePortalRecognition({ recognized: false, stage: "failed", progress: index / expectedStrokes, reason: "stroke-order", hint: "FINISH EACH CIRCLE IN ORDER" }, pauseMs, gap);
-      }
-      if (gap > positionTolerance) {
-        return makePortalRecognition({ recognized: false, stage: "failed", progress: index / expectedStrokes, reason: "stroke-position", hint: "START EACH CIRCLE NEAR THE LAST RING" }, pauseMs, gap);
+        return makePortalRecognition({ recognized: false, stage: "failed", progress: index / expectedStrokes, reason: "stroke-order", hint: "FINISH EACH CIRCLE IN ORDER" }, pauseMs);
       }
     }
     circles.push(circle);
   }
 
   if (circles.length < expectedStrokes) {
-    return makePortalRecognition({ recognized: false, stage: "awaiting-next-stroke", progress: circles.length / expectedStrokes, reason: "stroke-count", hint: `ADD THE ${circles.length === 1 ? "MIDDLE" : "INNER"} CLOSED CIRCLE` });
+    return makePortalRecognition({ recognized: false, stage: "awaiting-next-stroke", progress: circles.length / expectedStrokes, reason: "stroke-count", hint: `ADD SEPARATE CIRCLE ${circles.length + 1}` });
   }
 
-  const reference = circles[0];
-  const centersAreConcentric = circles.every((circle) => distance(reference.center, circle.center) <= centerTolerance);
-  const radii = circles.map((circle) => circle.radius);
-  const radiiAreDistinct = radii.every((radius, index) => radii.every((other, otherIndex) => index === otherIndex || Math.abs(radius - other) >= Math.max(8, dimension * 0.015)));
-  if (!centersAreConcentric || !radiiAreDistinct) {
-    return makePortalRecognition({ recognized: false, stage: "failed", progress: 0.86, reason: "stroke-position", hint: !centersAreConcentric ? "KEEP ALL THREE CIRCLES CONCENTRIC" : "USE THREE DISTINCT RING SIZES" });
+  const circlesAreSeparate = circles.every((circle, index) => circles.every((other, otherIndex) => {
+    if (index === otherIndex) return true;
+    const requiredSeparation = Math.max(minimumCenterSeparation, (circle.radius + other.radius) * 0.8);
+    return distance(circle.center, other.center) >= requiredSeparation;
+  }));
+  if (!circlesAreSeparate) {
+    return makePortalRecognition({ recognized: false, stage: "failed", progress: 0.86, reason: "stroke-position", hint: "KEEP THE THREE CIRCLES SEPARATE" });
   }
 
   const totalLength = circles.reduce((total, circle) => total + circle.pathLength, 0);
   if (totalLength < minimumLength) return makePortalRecognition({ recognized: false, stage: "failed", progress: clampProgress(totalLength / minimumLength), reason: "too-short", hint: "DRAW THREE LARGER PORTAL CIRCLES" });
-  return makePortalRecognition({ recognized: true, stage: "complete", progress: 1, hint: "THREE CONCENTRIC CIRCLES ACCEPTED" });
+  return makePortalRecognition({ recognized: true, stage: "complete", progress: 1, hint: "THREE SEPARATE CIRCLES ACCEPTED" });
 }

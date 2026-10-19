@@ -31,9 +31,9 @@ or multiplayer implementation yet.
 - Draw Freeze as two nearby, concentric closed circles, one circle per stroke;
   it costs 50 mana, deals no damage, and freezes the target for 2.5 seconds.
   An active Aegis ward consumes itself and reduces that freeze to 1 second.
-- Draw Ghost Portal as three nearby, concentric closed circles, one circle per
-  stroke. It costs 50 mana, deals 10 damage, summons three attacking ghosts,
-  and drains the opponent's mana to zero on impact.
+- Draw Ghost Portal as three separate closed circles, one circle per stroke. It
+  costs 50 mana, opens beside the caster, sends three attacking ghosts across
+  the arena, deals 10 damage, and drains the opponent's mana to zero on impact.
 - Select `LEARN IN ARENA` on a spell card to equip it with the matching symbol
   and gesture; opening `/` keeps Ember Lance equipped by default.
 - Open `/spells` or choose `SPELLBOOK` in the arena header to study the rune

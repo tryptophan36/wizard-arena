@@ -24,23 +24,23 @@
   </defs>
   <circle cx="160" cy="160" r="137" fill="url(#portal-aura)" />
   <g opacity="0.32" filter="url(#portal-glow)" stroke="#B89BFF" stroke-width="12">
-    <circle cx="160" cy="160" r="112" />
-    <circle cx="160" cy="160" r="76" />
-    <circle cx="160" cy="160" r="42" />
+    <circle cx="83" cy="211" r="47" />
+    <circle cx="160" cy="169" r="47" />
+    <circle cx="237" cy="211" r="47" />
   </g>
   <g stroke="url(#portal-ring)" stroke-linecap="round">
-    <circle cx="160" cy="160" r="112" stroke-width="6" stroke-dasharray="44 17" />
-    <circle cx="160" cy="160" r="76" stroke-width="5" stroke-dasharray="28 12" />
-    <circle cx="160" cy="160" r="42" stroke-width="4" stroke-dasharray="18 9" />
+    <circle cx="83" cy="211" r="47" stroke-width="6" stroke-dasharray="44 17" />
+    <circle cx="160" cy="169" r="47" stroke-width="6" stroke-dasharray="44 17" />
+    <circle cx="237" cy="211" r="47" stroke-width="6" stroke-dasharray="44 17" />
   </g>
   <g fill="url(#ghost-body)" stroke="#F3ECFF" stroke-width="3">
-    <path d="M102 151c0-25 17-43 36-43s36 18 36 43v43l-12-9-12 13-12-13-12 13-12-13-12 9v-43Z" />
-    <path d="M134 94c0-23 16-40 34-40s34 17 34 40v47l-11-10-12 14-11-14-12 14-11-14-11 10V94Z" transform="translate(38 38) scale(.72)" />
-    <path d="M136 175c0-21 14-37 30-37s30 16 30 37v37l-10-9-10 12-10-12-10 12-10-12-10 9v-37Z" transform="translate(-17 -38) scale(.63)" />
+    <path d="M48 112c0-25 16-42 35-42s35 17 35 42v48l-12-9-11 13-12-13-12 13-11-13-12 9v-48Z" />
+    <path d="M125 70c0-25 16-42 35-42s35 17 35 42v48l-12-9-11 13-12-13-12 13-11-13-12 9V70Z" />
+    <path d="M202 112c0-25 16-42 35-42s35 17 35 42v48l-12-9-11 13-12-13-12 13-11-13-12 9v-48Z" />
   </g>
   <g fill="#241B59">
-    <circle cx="126" cy="151" r="4" /><circle cx="149" cy="151" r="4" />
-    <circle cx="184" cy="115" r="3" /><circle cx="201" cy="115" r="3" />
-    <circle cx="139" cy="154" r="2.5" /><circle cx="153" cy="154" r="2.5" />
+    <circle cx="72" cy="111" r="4" /><circle cx="94" cy="111" r="4" />
+    <circle cx="149" cy="69" r="4" /><circle cx="171" cy="69" r="4" />
+    <circle cx="226" cy="111" r="4" /><circle cx="248" cy="111" r="4" />
   </g>
 </svg>

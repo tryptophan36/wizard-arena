@@ -38,10 +38,12 @@ function RuneDiagram({ spellId }: { spellId: SpellId }) {
         <circle className="spellbook-rune-start" cx="90" cy="16" r="4" />
       </>}
       {spellId === "ghost-portal" && <>
-        <circle className="spellbook-rune-stroke" cx="90" cy="65" r="52" />
-        <circle className="spellbook-rune-stroke" cx="90" cy="65" r="35" />
-        <circle className="spellbook-rune-stroke" cx="90" cy="65" r="18" />
-        <circle className="spellbook-rune-start" cx="90" cy="13" r="4" />
+        <circle className="spellbook-rune-stroke" cx="47" cy="52" r="25" />
+        <circle className="spellbook-rune-stroke" cx="133" cy="52" r="25" />
+        <circle className="spellbook-rune-stroke" cx="90" cy="103" r="25" />
+        <circle className="spellbook-rune-start" cx="47" cy="27" r="4" />
+        <circle className="spellbook-rune-start" cx="133" cy="27" r="4" />
+        <circle className="spellbook-rune-start" cx="90" cy="78" r="4" />
       </>}
     </svg>
   );

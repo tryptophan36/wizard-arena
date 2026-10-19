@@ -847,6 +847,13 @@ export class ArenaScene extends Phaser.Scene {
     const origin = enemy ? { x: target.x - 32, y: target.y - 36 } : { x: wizard.x + 32, y: wizard.y - 36 };
     const destination = enemy ? { x: wizard.x + 56, y: wizard.y - 41 } : { x: target.x - 56, y: target.y - 5 };
     const direction = enemy ? Math.PI : 0;
+    const travelPoint = (progress: number) => {
+      const control = { x: (origin.x + destination.x) / 2, y: Math.min(origin.y, destination.y) - 90 };
+      return {
+        x: Phaser.Math.Interpolation.QuadraticBezier(progress, origin.x, control.x, destination.x),
+        y: Phaser.Math.Interpolation.QuadraticBezier(progress, origin.y, control.y, destination.y),
+      };
+    };
 
     if (phase === "charging") {
       const progress = Phaser.Math.Clamp(elapsed / activeSpell.timings.charging, 0, 1);
@@ -856,39 +863,35 @@ export class ArenaScene extends Phaser.Scene {
     }
     if (phase === "flying") {
       const progress = Phaser.Math.Clamp(elapsed / activeSpell.timings.flying, 0, 1);
-      const point = (value: number) => ({
-        x: Phaser.Math.Interpolation.QuadraticBezier(value, origin.x, (origin.x + destination.x) / 2, destination.x),
-        y: Phaser.Math.Interpolation.QuadraticBezier(value, origin.y, Math.min(origin.y, destination.y) - 90, destination.y),
-      });
-      const current = point(progress);
-      for (let index = 8; index >= 1; index -= 1) {
-        const trailProgress = Math.max(0, progress - index * 0.025);
-        const trail = point(trailProgress);
-        this.art.fillStyle(index % 2 ? 0xb898ff : 0xe5d8ff, 0.08 + (9 - index) * 0.05);
-        this.art.fillCircle(trail.x, trail.y, 4 + (9 - index) * 0.75);
+      this.drawPortalGate(origin, 45 + Math.sin(t * 7) * 3, t, 0.86, direction);
+      for (let index = 0; index < 3; index += 1) {
+        const ghostProgress = Phaser.Math.Clamp((progress - index * 0.12) / 0.88, 0, 1);
+        if (ghostProgress <= 0) continue;
+        const ghost = travelPoint(ghostProgress);
+        for (let trailIndex = 4; trailIndex >= 1; trailIndex -= 1) {
+          const trail = travelPoint(Math.max(0, ghostProgress - trailIndex * 0.035));
+          this.art.fillStyle(trailIndex % 2 ? 0xb898ff : 0xe5d8ff, 0.06 + (5 - trailIndex) * 0.045);
+          this.art.fillCircle(trail.x, trail.y, 3 + (5 - trailIndex) * 0.8);
+        }
+        this.drawGhost(ghost, 15 + index * 1.5, t + index * 0.55, 0.9);
       }
-      this.drawPortalGate(current, 23 + Math.sin(t * 8) * 3, t, 0.8, direction);
-      this.drawSpectralOrb(current, 13 + Math.sin(t * 11) * 2, t, 1);
       return;
     }
     if (phase !== "impact") return;
 
     const progress = Phaser.Math.Clamp(elapsed / activeSpell.timings.impact, 0, 1);
-    this.drawPortalGate(destination, 45 + Math.sin(t * 7) * 3, t, 0.95 * (1 - progress * 0.58), direction);
+    this.drawPortalGate(origin, 48 + Math.sin(t * 7) * 3, t, 0.7 * (1 - progress), direction);
     for (let index = 0; index < 3; index += 1) {
       const angle = -Math.PI / 2 + index * (Math.PI * 2 / 3) + direction;
-      const ghostProgress = Phaser.Math.Clamp(progress * 1.35 - index * 0.08, 0, 1);
-      const distanceFromPortal = 12 + ghostProgress * 54;
+      const distanceFromTarget = 18 + progress * 24;
       const ghost = {
-        x: destination.x + Math.cos(angle) * distanceFromPortal,
-        y: destination.y + Math.sin(angle) * distanceFromPortal,
+        x: destination.x + Math.cos(angle) * distanceFromTarget,
+        y: destination.y + Math.sin(angle) * distanceFromTarget,
       };
-      const ghostAlpha = (1 - Math.max(0, progress - 0.78) / 0.22) * 0.92;
+      const ghostAlpha = (1 - progress) * 0.92;
       this.drawGhost(ghost, 15 + index * 1.5, t + index * 0.55, ghostAlpha);
-      if (ghostProgress > 0.35) {
-        this.art.lineStyle(2, 0xd8c8ff, (1 - progress) * 0.42);
-        this.art.lineBetween(ghost.x, ghost.y + 6, destination.x, destination.y);
-      }
+      this.art.lineStyle(2, 0xd8c8ff, (1 - progress) * 0.42);
+      this.art.lineBetween(ghost.x, ghost.y + 6, destination.x, destination.y);
     }
   }
 
