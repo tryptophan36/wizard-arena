@@ -1,13 +1,16 @@
-.PHONY: test lint build dev start docker-build docker-run
+.PHONY: test lint build css-check dev start docker-build docker-run
 
 # Runs the repository's offline-capable checks after dependencies are installed.
-test: lint build
+test: lint build css-check
 
 lint:
 	npm run lint
 
 build:
 	npm run build
+
+css-check:
+	node scripts/check-built-css.mjs
 
 dev:
 	npm run dev
