@@ -4,6 +4,7 @@ import { EMBER_LANCE_ASSET } from "@/game/emberLanceAsset";
 import { LIGHTNING_BOLT_ASSET } from "@/game/lightningBoltAsset";
 import { SHIELD_ASSET } from "@/game/shieldAsset";
 import { FREEZE_ASSET } from "@/game/freezeAsset";
+import { GHOST_PORTAL_ASSET } from "@/game/ghostPortalAsset";
 import { DEFAULT_DRAWING_TOOL, normalizeDrawingStroke, type DrawingTool, type DrawingToolState } from "@/game/drawingTool";
 import { getSpell, SPELLS, type SpellData, type SpellId } from "@/game/spellData";
 import { recognizeAnySpell } from "@/game/spellRecognition";
@@ -81,6 +82,8 @@ export class ArenaScene extends Phaser.Scene {
   private lightningBolt!: Phaser.GameObjects.Image;
   private freezeRings!: Phaser.GameObjects.Image;
   private enemyFreezeRings!: Phaser.GameObjects.Image;
+  private ghostPortal!: Phaser.GameObjects.Image;
+  private enemyGhostPortal!: Phaser.GameObjects.Image;
   private shield!: Phaser.GameObjects.Image;
   private enemyShield!: Phaser.GameObjects.Image;
   private gestureStrokes: RuneStroke[] = [];
@@ -155,6 +158,10 @@ export class ArenaScene extends Phaser.Scene {
       width: FREEZE_ASSET.width,
       height: FREEZE_ASSET.height,
     });
+    this.load.svg(GHOST_PORTAL_ASSET.key, GHOST_PORTAL_ASSET.url, {
+      width: GHOST_PORTAL_ASSET.width,
+      height: GHOST_PORTAL_ASSET.height,
+    });
   }
 
   create() {
@@ -184,6 +191,16 @@ export class ArenaScene extends Phaser.Scene {
       .setBlendMode(Phaser.BlendModes.ADD)
       .setVisible(false)
       .setDepth(3);
+    this.ghostPortal = this.add.image(0, 0, GHOST_PORTAL_ASSET.key)
+      .setOrigin(GHOST_PORTAL_ASSET.origin.x, GHOST_PORTAL_ASSET.origin.y)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false)
+      .setDepth(2);
+    this.enemyGhostPortal = this.add.image(0, 0, GHOST_PORTAL_ASSET.key)
+      .setOrigin(GHOST_PORTAL_ASSET.origin.x, GHOST_PORTAL_ASSET.origin.y)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setVisible(false)
+      .setDepth(2);
     this.shield = this.add.image(0, 0, SHIELD_ASSET.key)
       .setOrigin(SHIELD_ASSET.origin.x, SHIELD_ASSET.origin.y)
       .setBlendMode(Phaser.BlendModes.ADD)
@@ -606,6 +623,7 @@ export class ArenaScene extends Phaser.Scene {
   private drawSpell(wizard: Point, target: Point, time: number, t: number) {
     const activeSpell = this.projectileSpell ?? this.spell;
     this.freezeRings.setVisible(false);
+    this.ghostPortal.setVisible(false);
     if (activeSpell.visualKind === "shield") {
       this.lightningBolt.setVisible(false); this.emberLance.setVisible(false);
       return;
@@ -662,6 +680,7 @@ export class ArenaScene extends Phaser.Scene {
   private drawEnemySpell(wizard: Point, target: Point, time: number, t: number) {
     const activeSpell = this.enemyProjectileSpell;
     this.enemyFreezeRings.setVisible(false);
+    this.enemyGhostPortal.setVisible(false);
     if (!activeSpell || this.enemyPhase === "ready") {
       this.enemyEmberLance.setVisible(false);
       if (this.projectileSpell?.visualKind !== "lightning") this.lightningBolt.setVisible(false);
@@ -847,6 +866,7 @@ export class ArenaScene extends Phaser.Scene {
     const origin = enemy ? { x: target.x - 32, y: target.y - 36 } : { x: wizard.x + 32, y: wizard.y - 36 };
     const destination = enemy ? { x: wizard.x + 56, y: wizard.y - 41 } : { x: target.x - 56, y: target.y - 5 };
     const direction = enemy ? Math.PI : 0;
+    const portalImage = enemy ? this.enemyGhostPortal : this.ghostPortal;
     const travelPoint = (progress: number) => {
       const control = { x: (origin.x + destination.x) / 2, y: Math.min(origin.y, destination.y) - 90 };
       return {
@@ -857,13 +877,13 @@ export class ArenaScene extends Phaser.Scene {
 
     if (phase === "charging") {
       const progress = Phaser.Math.Clamp(elapsed / activeSpell.timings.charging, 0, 1);
-      this.drawPortalGate(origin, 24 + progress * 23, t, 0.35 + progress * 0.5, direction);
+      this.drawPortalGate(origin, 24 + progress * 23, t, 0.35 + progress * 0.5, direction, portalImage);
       this.drawSpectralOrb(origin, 8 + progress * 12, t, 0.7);
       return;
     }
     if (phase === "flying") {
       const progress = Phaser.Math.Clamp(elapsed / activeSpell.timings.flying, 0, 1);
-      this.drawPortalGate(origin, 45 + Math.sin(t * 7) * 3, t, 0.86, direction);
+      this.drawPortalGate(origin, 45 + Math.sin(t * 7) * 3, t, 0.86, direction, portalImage);
       for (let index = 0; index < 3; index += 1) {
         const ghostProgress = Phaser.Math.Clamp((progress - index * 0.12) / 0.88, 0, 1);
         if (ghostProgress <= 0) continue;
@@ -880,7 +900,7 @@ export class ArenaScene extends Phaser.Scene {
     if (phase !== "impact") return;
 
     const progress = Phaser.Math.Clamp(elapsed / activeSpell.timings.impact, 0, 1);
-    this.drawPortalGate(origin, 48 + Math.sin(t * 7) * 3, t, 0.7 * (1 - progress), direction);
+    this.drawPortalGate(origin, 48 + Math.sin(t * 7) * 3, t, 0.7 * (1 - progress), direction, portalImage);
     for (let index = 0; index < 3; index += 1) {
       const angle = -Math.PI / 2 + index * (Math.PI * 2 / 3) + direction;
       const distanceFromTarget = 18 + progress * 24;
@@ -895,8 +915,14 @@ export class ArenaScene extends Phaser.Scene {
     }
   }
 
-  private drawPortalGate(center: Point, radius: number, t: number, alpha: number, rotation: number) {
+  private drawPortalGate(center: Point, radius: number, t: number, alpha: number, rotation: number, portalImage: Phaser.GameObjects.Image) {
     const g = this.art;
+    portalImage
+      .setPosition(center.x, center.y)
+      .setRotation(Math.sin(t * 0.8) * 0.025)
+      .setScale(radius / 150)
+      .setAlpha(Math.min(1, alpha * 0.92))
+      .setVisible(true);
     g.fillStyle(0x8d70ff, alpha * 0.08); g.fillCircle(center.x, center.y, radius * 1.8);
     for (let index = 0; index < 3; index += 1) {
       const ringRadius = radius * (1 - index * 0.22);

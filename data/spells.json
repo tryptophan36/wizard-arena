@@ -121,7 +121,7 @@
     "difficulty": "MASTER",
     "timings": { "charging": 620, "flying": 900, "impact": 1200 },
     "tags": ["SUMMON", "SPIRIT", "MANA DRAIN"],
-    "assetKey": "ghost-portal",
+    "assetKey": "ghost-portal-opening",
     "visualKind": "ghost-portal",
     "kind": "offensive",
     "gesture": {

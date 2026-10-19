@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="420" viewBox="0 0 360 420" fill="none">
+  <title>Ghost Portal Opening</title>
+  <desc>A violet dimensional portal opening with a dark core, luminous rim, floating runes, and spectral wisps.</desc>
+  <defs>
+    <radialGradient id="opening-aura" cx="0" cy="0" r="1" gradientTransform="translate(180 218) rotate(90) scale(190 150)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E8DFFF" stop-opacity="0.42" />
+      <stop offset="0.5" stop-color="#9E7BFF" stop-opacity="0.2" />
+      <stop offset="1" stop-color="#5B43C7" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="opening-void" cx="0" cy="0" r="1" gradientTransform="translate(180 223) rotate(90) scale(138 82)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#07051D" />
+      <stop offset="0.65" stop-color="#16103E" />
+      <stop offset="1" stop-color="#5136A8" stop-opacity="0.65" />
+    </radialGradient>
+    <linearGradient id="opening-rim" x1="65" y1="334" x2="298" y2="94" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#6950E8" />
+      <stop offset="0.3" stop-color="#B99DFF" />
+      <stop offset="0.52" stop-color="#F7F1FF" />
+      <stop offset="0.75" stop-color="#A77FFF" />
+      <stop offset="1" stop-color="#6049D7" />
+    </linearGradient>
+    <linearGradient id="wisp" x1="180" y1="93" x2="180" y2="210" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" />
+      <stop offset="0.4" stop-color="#D4C2FF" />
+      <stop offset="1" stop-color="#8068E9" stop-opacity="0.16" />
+    </linearGradient>
+    <filter id="opening-blur" x="-60%" y="-45%" width="220%" height="190%">
+      <feGaussianBlur stdDeviation="18" />
+    </filter>
+    <filter id="opening-glow" x="-45%" y="-45%" width="190%" height="190%">
+      <feGaussianBlur stdDeviation="5" />
+    </filter>
+  </defs>
+
+  <ellipse cx="180" cy="220" rx="145" ry="185" fill="url(#opening-aura)" filter="url(#opening-blur)" />
+  <ellipse cx="180" cy="224" rx="91" ry="147" fill="#9F7BFF" opacity="0.18" filter="url(#opening-blur)" />
+  <ellipse cx="180" cy="224" rx="78" ry="137" fill="url(#opening-void)" stroke="#B89BFF" stroke-opacity="0.35" stroke-width="3" />
+
+  <g opacity="0.52" filter="url(#opening-glow)" stroke="#C6B1FF" stroke-width="14">
+    <ellipse cx="180" cy="224" rx="105" ry="163" />
+    <ellipse cx="180" cy="224" rx="84" ry="143" />
+  </g>
+  <g stroke="url(#opening-rim)" stroke-linecap="round">
+    <ellipse cx="180" cy="224" rx="105" ry="163" stroke-width="7" stroke-dasharray="52 20 18 14" />
+    <ellipse cx="180" cy="224" rx="92" ry="150" stroke-width="3" stroke-dasharray="8 15" opacity="0.9" />
+  </g>
+
+  <g fill="url(#wisp)" opacity="0.88">
+    <path d="M129 193c-11-42 14-78 37-99-6 30 8 39 2 62-4 16-19 30-39 37Z" />
+    <path d="M179 173c-16-42 7-84 22-106 1 30 19 42 12 67-5 18-17 30-34 39Z" />
+    <path d="M222 194c-5-38 17-66 34-82-4 27 10 42 3 63-6 17-19 27-37 35Z" />
+  </g>
+
+  <g fill="#E9DEFF" stroke="#8C70F1" stroke-width="2">
+    <path d="M65 91l8 16 17 8-17 8-8 17-8-17-17-8 17-8 8-16Z" />
+    <path d="M291 152l5 11 12 5-12 5-5 12-5-12-12-5 12-5 5-11Z" />
+    <path d="M81 286l5 11 12 5-12 5-5 12-5-12-12-5 12-5 5-11Z" />
+  </g>
+  <g stroke="#D9C8FF" stroke-linecap="round" opacity="0.68">
+    <path d="M44 184c22-9 27-28 22-48" stroke-width="2" />
+    <path d="M316 237c-21-10-28-29-22-50" stroke-width="2" />
+    <path d="M115 365c23 13 39 12 59 4" stroke-width="2" />
+    <path d="M245 369c-20 11-37 10-54 2" stroke-width="2" />
+  </g>
+  <g fill="#F7F1FF">
+    <circle cx="51" cy="145" r="3" />
+    <circle cx="310" cy="112" r="2.5" />
+    <circle cx="40" cy="274" r="2" />
+    <circle cx="321" cy="299" r="3" />
+    <circle cx="104" cy="64" r="2" />
+    <circle cx="255" cy="72" r="2" />
+  </g>
+</svg>
