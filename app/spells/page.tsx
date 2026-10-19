@@ -69,8 +69,8 @@ export default function SpellsPage() {
     <main className="spellbook-reader-page">
       <div className="spellbook-reader-stars" aria-hidden="true" />
       <header className="spellbook-reader-header">
-        <Link className="spellbook-back" href="/arena">
-          <span aria-hidden="true">←</span> RETURN TO ARENA
+        <Link className="spellbook-back" href="/">
+          <span aria-hidden="true">←</span> RETURN TO MAIN MENU
         </Link>
         <div className="spellbook-brand">
           <div className="brand-mark" aria-hidden="true">✦</div>
@@ -159,7 +159,7 @@ export default function SpellsPage() {
 
               <div className="spellbook-detail-footer">
                 <div className="spellbook-tags">{spell.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
-                <Link className="spellbook-arena-cta" href={`/arena?spell=${spell.id}`}>PRACTICE THIS SPELL <span aria-hidden="true">↗</span></Link>
+                <Link className="spellbook-arena-cta" href={`/practice?spell=${spell.id}`}>PRACTICE THIS SPELL <span aria-hidden="true">↗</span></Link>
               </div>
             </article>
           </div>

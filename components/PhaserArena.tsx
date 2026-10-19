@@ -5,12 +5,12 @@ import type { ArenaCallbacks, ArenaMode } from "@/game/ArenaScene";
 import type { DrawingTool, DrawingToolState } from "@/game/drawingTool";
 import type { SpellId } from "@/game/spellData";
 
-type PhaserArenaProps = ArenaCallbacks & { spellId: SpellId; drawingTool: DrawingTool; mode: ArenaMode };
+type PhaserArenaProps = ArenaCallbacks & { spellId: SpellId; drawingTool: DrawingTool; mode: ArenaMode; restartKey: string };
 type ArenaGame = {
   destroy: (removeCanvas: boolean) => void;
 };
 
-export default function PhaserArena({ onManaChange, onEnemyManaChange, onTargetHealthChange, onPlayerHealthChange, onEnemyActivityChange, onGameStateChange, onCooldownChange, onEnemyCooldownChange, onPhaseChange, onGestureChange, onSpellChange, spellId, drawingTool, mode }: PhaserArenaProps) {
+export default function PhaserArena({ onManaChange, onEnemyManaChange, onTargetHealthChange, onPlayerHealthChange, onEnemyActivityChange, onGameStateChange, onCooldownChange, onEnemyCooldownChange, onPhaseChange, onGestureChange, onSpellChange, spellId, drawingTool, mode, restartKey }: PhaserArenaProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const drawingToolStateRef = useRef<DrawingToolState>({ value: drawingTool });
 
@@ -33,7 +33,7 @@ export default function PhaserArena({ onManaChange, onEnemyManaChange, onTargetH
       cancelled = true;
       game?.destroy(true);
     };
-  }, [onManaChange, onEnemyManaChange, onTargetHealthChange, onPlayerHealthChange, onEnemyActivityChange, onGameStateChange, onCooldownChange, onEnemyCooldownChange, onPhaseChange, onGestureChange, onSpellChange, spellId, mode]);
+  }, [onManaChange, onEnemyManaChange, onTargetHealthChange, onPlayerHealthChange, onEnemyActivityChange, onGameStateChange, onCooldownChange, onEnemyCooldownChange, onPhaseChange, onGestureChange, onSpellChange, spellId, mode, restartKey]);
 
   return <div ref={mountRef} className="arena-canvas" aria-label="Playable wizard arena" />;
 }
