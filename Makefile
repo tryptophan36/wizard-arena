@@ -1,7 +1,13 @@
-.PHONY: test lint build css-check dev start docker-build docker-run
+.PHONY: test backend-test backend-typecheck lint build css-check shared-test dev server server-dev start docker-build docker-run
 
 # Runs the repository's offline-capable checks after dependencies are installed.
-test: lint build css-check
+test: backend-test backend-typecheck lint build css-check shared-test
+
+backend-test:
+	npm run test:backend
+
+backend-typecheck:
+	npm run typecheck:backend
 
 lint:
 	npm run lint
@@ -12,8 +18,17 @@ build:
 css-check:
 	node scripts/check-built-css.mjs
 
+shared-test:
+	node --import tsx --test shared/multiplayer.test.ts
+
 dev:
 	npm run dev
+
+server:
+	npm run server
+
+server-dev:
+	npm run server:dev
 
 start:
 	npm run start
