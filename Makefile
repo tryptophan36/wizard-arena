@@ -1,13 +1,16 @@
-.PHONY: test backend-test backend-typecheck lint build css-check shared-test dev server server-dev start docker-build docker-run
+.PHONY: test backend-test backend-typecheck client-test lint build css-check shared-test dev server server-dev start docker-build docker-run
 
 # Runs the repository's offline-capable checks after dependencies are installed.
-test: backend-test backend-typecheck lint build css-check shared-test
+test: backend-test backend-typecheck client-test lint build css-check shared-test
 
 backend-test:
 	npm run test:backend
 
 backend-typecheck:
 	npm run typecheck:backend
+
+client-test:
+	npx tsx --test lib/multiplayer/duel-client.test.ts
 
 lint:
 	npm run lint

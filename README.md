@@ -7,10 +7,11 @@ drawable spells, and a victory/defeat loop for duels.
 
 ## Game flow
 
-- `/` — home menu with `COMPUTER`, `PRACTICE`, `SPELL BOOK`, and `MULTIPLAYER` (the UI is not wired to the backend yet).
+- `/` — home menu with `COMPUTER`, `PRACTICE`, `SPELL BOOK`, and `MULTIPLAYER`.
 - `/arena` — local computer duel against the Ashen Warden.
 - `/practice` — free-cast practice range with a passive target; every registered spell can be drawn and released with `A` without mana or cooldown limits.
 - `/spells` — learn every currently available rune before entering the arena.
+- `/multiplayer` — create or join a two-player Colyseus room, view the room roster, and ready up for the network duel.
 
 The computer opponent evaluates its mana, cooldown, health, projectile state,
 and the player's shield before choosing between Ember Lance, Lightning, Freeze,
@@ -90,6 +91,12 @@ receives a typed `pong` containing the nonce and authoritative server time.
 The server also handles normal Colyseus client disconnects through the same
 room lifecycle rules.
 
+The browser connects through [`lib/multiplayer/duel-client.ts`](lib/multiplayer/duel-client.ts),
+a UI-independent adapter around the Colyseus SDK. The lobby does not import or
+manage raw WebSocket lifecycle details. Set `NEXT_PUBLIC_COLYSEUS_URL` when the
+backend is not running at the local default; `.env.example` contains the local
+development values.
+
 ## Adding a spell
 
 Spell content lives in [`data/spells.json`](data/spells.json). Add a record with
@@ -140,7 +147,17 @@ Start the development server with hot reload:
 npm run dev
 ```
 
-Open <http://localhost:3000>.
+In a second terminal, start the standalone multiplayer server:
+
+```bash
+npm run server
+```
+
+Open <http://localhost:3000>. Choose `MULTIPLAYER`, create a room, then open a
+second browser window and join with the displayed room ID. Both players can
+ready up and observe the authoritative room phase transition. The Phaser duel
+surface is the next multiplayer slice; the current `/multiplayer` page is the
+working room/lobby flow.
 
 To serve a production build locally:
 
@@ -169,6 +186,7 @@ npm run lint
 npm run build
 npm run test:backend
 npm run typecheck:backend
+npx tsx --test lib/multiplayer/duel-client.test.ts
 ```
 
 ## Deploy with Docker
@@ -198,5 +216,6 @@ docker build -t wizard-arena .
 docker run --rm -p 2567:2567 wizard-arena npm run server
 ```
 
-The frontend and multiplayer backend are separate processes; the current UI
-does not connect to `wizard_duel` yet.
+The frontend and multiplayer backend are separate processes. Configure the
+frontend container with `NEXT_PUBLIC_COLYSEUS_URL` pointing at the public
+`ws://`/`wss://` address of the backend.
