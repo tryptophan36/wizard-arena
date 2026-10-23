@@ -7,18 +7,19 @@ drawable spells, and a victory/defeat loop for duels.
 
 ## Game flow
 
-- `/` — home menu with `COMPUTER`, `PRACTICE`, `SPELL BOOK`, and `MULTIPLAYER` (not implemented).
+- `/` — home menu with `COMPUTER`, `PRACTICE`, `SPELL BOOK`, and `MULTIPLAYER`.
 - `/arena` — local computer duel against the Ashen Warden.
 - `/practice` — free-cast practice range with a passive target; every registered spell can be drawn and released with `A` without mana or cooldown limits.
 - `/spells` — learn every currently available rune before entering the arena.
+- `/multiplayer` — create or join a two-player Colyseus room, view the room roster, and ready up for the network duel.
 
 The computer opponent evaluates its mana, cooldown, health, projectile state,
 and the player's shield before choosing between Ember Lance, Lightning, Freeze,
 Aegis, and Ghost Portal. A successful Lightning hit deals 20 damage and stuns
 the computer for 1.8 seconds, interrupting any active cast. Freeze binds the
 target for 2.5 seconds. Ghost Portal deals 10 damage and empties the target's
-mana. It uses deterministic timing and local simulation; there is no network
-or multiplayer implementation yet.
+mana. It uses deterministic timing and local simulation. The multiplayer
+backend is available as a separate Colyseus process described below.
 
 ## First playable slice
 
@@ -56,6 +57,51 @@ assets, so the prototype can be rebuilt and run without a separate asset
 pipeline. The next quality bar is to replace selected procedural pieces with
 licensed, hand-authored sprites and audio while preserving the same simulation
 and effects interfaces.
+
+## Multiplayer backend
+
+The first multiplayer slice is a standalone Colyseus server under
+[`server/`](server/). It is independent of the Next.js/React UI and listens
+on port `2567` by default:
+
+```bash
+npm run server
+# or, with automatic restart during backend work:
+npm run server:dev
+```
+
+Set `PORT` to choose another port. The registered room type is
+`wizard_duel`. Colyseus creates a unique room ID for each room; a client can
+create a room with `joinOrCreate("wizard_duel", metadata)`, then share the
+returned `room.roomId` and use `joinById(roomId, metadata)` for the second
+player. Join metadata accepts `displayName` and `wizardId`.
+
+The authoritative room state contains at most two players and follows these
+transitions:
+
+- `waiting` — fewer than two players are connected.
+- `ready` — two players are connected and at least one is not ready.
+- `playing` — both players have sent `ready: true`.
+- `finished` — a player leaves during play; the remaining player is recorded as
+  the winner and the room is locked.
+
+Supported client messages are `ready` (`{ ready: boolean }`), `ping`
+(`{ nonce?: string }`), and `leave` (`{ reason?: string }`). A valid `ping`
+receives a typed `pong` containing the nonce and authoritative server time.
+The server also handles normal Colyseus client disconnects through the same
+room lifecycle rules.
+
+The browser connects through [`lib/multiplayer/duel-client.ts`](lib/multiplayer/duel-client.ts),
+a UI-independent adapter around the Colyseus SDK. The lobby and multiplayer
+arena do not import or manage raw WebSocket lifecycle details. Set
+`NEXT_PUBLIC_COLYSEUS_URL` when the backend is not running at the local default;
+`.env.example` contains the local development values.
+
+The multiplayer arena streams bounded drawing previews, sends completed strokes
+to the room for server-side recognition, and renders server-authored spell
+phases and impacts. Health, mana, cooldowns, shields, freezes, stuns, damage,
+mana drain, and the winner are all resolved by the Colyseus room rather than by
+the browser.
 
 ## Adding a spell
 
@@ -107,7 +153,16 @@ Start the development server with hot reload:
 npm run dev
 ```
 
-Open <http://localhost:3000>.
+In a second terminal, start the standalone multiplayer server:
+
+```bash
+npm run server
+```
+
+Open <http://localhost:3000>. Choose `MULTIPLAYER`, create a room, then open a
+second browser window and join with the displayed room ID. Both players can
+ready up, enter the Phaser arena, draw runes, see each other's live drawing,
+and observe server-authoritative spell impacts in real time.
 
 To serve a production build locally:
 
@@ -124,15 +179,19 @@ Install dependencies first, then run the single project check command:
 make test
 ```
 
-`make test` runs the configured ESLint check followed by the Next.js
-production build. Both checks run locally without fetching additional
-resources once `npm ci` has completed.
+`make test` runs the backend integration test and typecheck, the configured
+ESLint check, the Next.js production build, and the repository CSS/shared
+checks. All checks run locally without fetching additional resources once
+`npm ci` has completed.
 
 The individual commands are also available when needed:
 
 ```bash
 npm run lint
 npm run build
+npm run test:backend
+npm run typecheck:backend
+npx tsx --test lib/multiplayer/duel-client.test.ts
 ```
 
 ## Deploy with Docker
@@ -154,3 +213,14 @@ make docker-run
 Then open <http://localhost:3000>. The Docker image uses Node.js 22.14.0,
 installs from the committed lockfile with `npm ci`, builds the app, and starts
 it with `next start`.
+
+The same image can run the standalone multiplayer process instead:
+
+```bash
+docker build -t wizard-arena .
+docker run --rm -p 2567:2567 wizard-arena npm run server
+```
+
+The frontend and multiplayer backend are separate processes. Configure the
+frontend container with `NEXT_PUBLIC_COLYSEUS_URL` pointing at the public
+`ws://`/`wss://` address of the backend.

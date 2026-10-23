@@ -161,6 +161,7 @@ export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: nu
       const previousEndTime = strokeEndTime(previous);
       const currentStartTime = strokeStartTime(stroke);
       const pauseMs = previousEndTime !== undefined && currentStartTime !== undefined ? currentStartTime - previousEndTime : undefined;
+      const positionTolerance = Math.max(16, circles[0].radius * 1.35);
       if (pauseMs !== undefined && pauseMs < 0) {
         return makeFreezeRecognition(strokes, minimumLength, minimumStrokeLengths, {
           recognized: false,
@@ -194,9 +195,12 @@ export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: nu
   }
 
   const reference = circles[0];
+  const centerTolerance = Math.max(10, Math.max(...circles.map((circle) => circle.radius)) * 0.55);
   const centersAreConcentric = circles.every((circle) => distance(reference.center, circle.center) <= centerTolerance);
   const radii = circles.map((circle) => circle.radius);
-  const radiiAreDistinct = radii.every((radius, index) => radii.every((other, otherIndex) => index === otherIndex || Math.abs(radius - other) >= Math.max(8, dimension * 0.015)));
+  const radiiAreDistinct = radii.every((radius, index) =>
+    radii.every((other, otherIndex) => index === otherIndex || Math.abs(radius - other) >= Math.max(3, Math.min(radius, other) * 0.18)),
+  );
   if (!centersAreConcentric || !radiiAreDistinct) {
     return makeFreezeRecognition(strokes, minimumLength, minimumStrokeLengths, {
       recognized: false,

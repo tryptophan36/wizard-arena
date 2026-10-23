@@ -36,7 +36,7 @@ export function recognizeLightningStrokes(strokes: RuneStroke[], arenaDimension:
     let previousHorizontalDirection = 0;
     for (let index = 1; index < first.points.length; index += 1) {
       const dx = first.points[index].x - first.points[index - 1].x;
-      if (Math.abs(dx) < 3) continue;
+      if (Math.abs(dx) < 1.5) continue;
       const horizontalDirection = Math.sign(dx);
       if (previousHorizontalDirection !== 0 && horizontalDirection !== previousHorizontalDirection) directionChanges += 1;
       previousHorizontalDirection = horizontalDirection;
@@ -51,7 +51,7 @@ export function recognizeLightningStrokes(strokes: RuneStroke[], arenaDimension:
     return makeLightningRecognition({ recognized: false, stage: "first-stroke", progress: 0, reason: "too-short", hint: "MAKE STROKE 1 A LONG DOWN-RIGHT LINE" });
   }
 
-  const positionTolerance = Math.max(28, dimension * 0.1);
+  const positionTolerance = Math.max(16, firstLength * 0.45);
   const validateStroke = (stroke: RuneStroke, index: number) => {
     const start = stroke.points[0];
     const end = stroke.points[stroke.points.length - 1];

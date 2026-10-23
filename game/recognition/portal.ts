@@ -100,7 +100,7 @@ function isCircle(estimate: CircleEstimate, dimension: number) {
 
 /** Recognize exactly three separate, closed circular strokes. */
 export function recognizeGhostPortalStrokes(strokes: RuneStroke[], arenaDimension: number): RuneRecognition {
-  const dimension = Math.max(1, arenaDimension);
+  void arenaDimension;
   const expectedStrokes = 3;
   const minimumLength = 0;
   const minimumStrokeLengths = Array.from({ length: expectedStrokes }, () => 0);

@@ -73,11 +73,11 @@ export default function HomeMenu() {
               <span className="game-mode-copy"><strong>SPELL BOOK</strong><small>STUDY THE REGISTERED RUNES</small></span>
               <span className="game-mode-arrow" aria-hidden="true">→</span>
             </Link>
-            <button className="game-mode game-mode-disabled" type="button" disabled>
+            <Link className="game-mode game-mode-active game-mode-multiplayer" href="/multiplayer">
               <span className="game-mode-symbol" aria-hidden="true">◎</span>
               <span className="game-mode-copy"><strong>MULTIPLAYER</strong><small>NETWORK DUELS</small></span>
-              <span className="game-mode-badge">NOT IMPLEMENTED</span>
-            </button>
+              <span className="game-mode-arrow" aria-hidden="true">→</span>
+            </Link>
           </div>
 
           <div className="home-panel-footer">

@@ -6,9 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "server": "tsx server/index.ts",
+    "server:dev": "tsx watch server/index.ts",
+    "test:backend": "tsx --test server/*.test.ts",
+    "typecheck:backend": "tsc --noEmit -p server/tsconfig.json"
   },
   "dependencies": {
+    "@colyseus/sdk": "^0.18.5",
+    "@colyseus/schema": "^5.0.41",
+    "@colyseus/ws-transport": "^0.18.4",
+    "colyseus": "^0.18.9",
     "next": "16.4.2",
     "phaser": "^4.2.1",
     "react": "19.3.0",
@@ -22,6 +30,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }

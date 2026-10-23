@@ -4,6 +4,10 @@ import {
   type RuneStroke,
 } from "@/game/recognition/shared";
 
+/** Tiny floor so noise / single-pixel clicks never match; no arena-scaled size gate. */
+const MIN_PATH_LENGTH = 12;
+const MIN_SIDE = 4;
+
 /** Recognize one closed, four-corner square for the Aegis ward. */
 export function recognizeAegisStrokes(strokes: RuneStroke[], arenaDimension: number): RuneRecognition {
   const dimension = Math.max(1, arenaDimension);
@@ -32,7 +36,8 @@ export function recognizeAegisStrokes(strokes: RuneStroke[], arenaDimension: num
   const minY = Math.min(...ys); const maxY = Math.max(...ys);
   const width = maxX - minX; const height = maxY - minY;
   const closureDistance = Math.hypot(end.x - start.x, end.y - start.y);
-  const isClosed = closureDistance <= Math.max(26, dimension * 0.07);
+  // Closure scales with the drawn square so small wards are as easy to close as large ones.
+  const isClosed = closureDistance <= Math.max(6, Math.max(width, height) * 0.28);
   let axisChanges = 0;
   let previousAxis = 0;
   let axisAlignmentTotal = 0;
@@ -41,7 +46,7 @@ export function recognizeAegisStrokes(strokes: RuneStroke[], arenaDimension: num
   for (let index = 1; index < points.length; index += 1) {
     const dx = points[index].x - points[index - 1].x;
     const dy = points[index].y - points[index - 1].y;
-    if (Math.hypot(dx, dy) < 3) continue;
+    if (Math.hypot(dx, dy) < 1.5) continue;
     const axis = Math.abs(dx) >= Math.abs(dy) ? 1 : 2;
     axisAlignmentTotal += Math.max(Math.abs(dx), Math.abs(dy)) / Math.hypot(dx, dy);
     axisAlignmentSamples += 1;
@@ -56,7 +61,7 @@ export function recognizeAegisStrokes(strokes: RuneStroke[], arenaDimension: num
     const outgoing = { x: next.x - current.x, y: next.y - current.y };
     const incomingLength = Math.hypot(incoming.x, incoming.y);
     const outgoingLength = Math.hypot(outgoing.x, outgoing.y);
-    if (incomingLength < 3 || outgoingLength < 3) continue;
+    if (incomingLength < 1.5 || outgoingLength < 1.5) continue;
     const cosine = (incoming.x * outgoing.x + incoming.y * outgoing.y) / (incomingLength * outgoingLength);
     if (cosine < 0.45) sharpTurns += 1;
   }
