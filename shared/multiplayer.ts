@@ -219,7 +219,7 @@ export function isMatchPhase(value: unknown): value is MatchPhase {
 export function validateMatchPhase(value: unknown): ValidationResult<MatchPhase> {
   const normalized = normalizeMatchPhase(value);
   return normalized === null
-    ? failure("match phase must be lobby, countdown, playing, or finished")
+    ? failure("match phase must be waiting, ready, playing, or finished")
     : success(normalized);
 }
 

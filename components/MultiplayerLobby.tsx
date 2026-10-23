@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
+import MultiplayerArena from "@/components/MultiplayerArena";
 import {
   DuelClient,
   type DuelConnectionState,
@@ -43,7 +44,7 @@ const PHASE_COPY: Record<
   playing: {
     label: "PLAYING",
     title: "DUEL CHANNEL OPEN",
-    description: "Both wizards are ready. The arena match surface will appear here next.",
+    description: "Both wizards are ready. Draw your rune in the live arena and press A to match it.",
   },
   finished: {
     label: "FINISHED",
@@ -55,6 +56,7 @@ const PHASE_COPY: Record<
 export default function MultiplayerLobby() {
   const router = useRouter();
   const clientRef = useRef<DuelClient | null>(null);
+  const [activeClient, setActiveClient] = useState<DuelClient | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [wizardId, setWizardId] = useState<string>(WIZARD_OPTIONS[0].id);
   const [roomIdInput, setRoomIdInput] = useState("");
@@ -70,6 +72,7 @@ export default function MultiplayerLobby() {
     clientRef.current = client;
 
     const unsubscribeState = client.subscribeState((state) => {
+      setActiveClient(client);
       setRoomState(state);
       setSessionId(client.sessionId);
       setRoomIdInput((currentRoomId) => currentRoomId || state.roomId);
@@ -84,6 +87,7 @@ export default function MultiplayerLobby() {
       unsubscribeConnection();
       unsubscribeError();
       clientRef.current = null;
+      setActiveClient(null);
       void client.dispose();
     };
   }, []);
@@ -98,6 +102,7 @@ export default function MultiplayerLobby() {
     [roomState],
   );
   const phaseCopy = roomState ? PHASE_COPY[roomState.phase] : null;
+  const isPlaying = roomState?.phase === "playing";
   const isBusy = action !== null;
 
   function getName(): string | null {
@@ -215,7 +220,7 @@ export default function MultiplayerLobby() {
   }
 
   return (
-    <main className="multiplayer-page">
+    <main className={`multiplayer-page${isPlaying ? " multiplayer-page-playing" : ""}`}>
       <div className="multiplayer-stars" aria-hidden="true" />
       <div className="multiplayer-orbit multiplayer-orbit-one" aria-hidden="true" />
       <div className="multiplayer-orbit multiplayer-orbit-two" aria-hidden="true" />
@@ -250,8 +255,8 @@ export default function MultiplayerLobby() {
           <div className="multiplayer-room-heading">
             <div>
               <p className="eyebrow">NETWORK DUEL <span className="eyebrow-divider">/</span> ROOM ACTIVE</p>
-              <h2 id="multiplayer-room-title">THE <em>LOBBY.</em></h2>
-              <p className="multiplayer-room-lede">Your duel channel is open. Keep this room ID private to the wizards you want to challenge.</p>
+               <h2 id="multiplayer-room-title">THE <em>{roomState.phase === "playing" ? "ARENA." : "LOBBY."}</em></h2>
+               <p className="multiplayer-room-lede">{roomState.phase === "playing" ? "The server owns the duel state. Draw, match, and read every impact in real time." : "Your duel channel is open. Keep this room ID private to the wizards you want to challenge."}</p>
             </div>
             <div className={`multiplayer-phase multiplayer-phase-${roomState.phase}`}>
               <span className="status-dot" />
@@ -270,75 +275,87 @@ export default function MultiplayerLobby() {
             </button>
           </div>
 
-          <div className="multiplayer-room-grid">
-            <section className="multiplayer-card multiplayer-players-card" aria-labelledby="multiplayer-players-title">
-              <div className="multiplayer-card-heading">
-                <div>
-                  <p className="eyebrow">CIRCUIT ROSTER</p>
-                  <h3 id="multiplayer-players-title">PLAYERS</h3>
+          {roomState.phase === "playing" && activeClient ? (
+            <MultiplayerArena
+              client={activeClient}
+              roomState={roomState}
+              sessionId={sessionId}
+              connectionState={connectionState}
+              leaving={action === "leave"}
+              onLeave={() => void handleLeave()}
+            />
+          ) : (
+            <div className="multiplayer-room-grid">
+              <section className="multiplayer-card multiplayer-players-card" aria-labelledby="multiplayer-players-title">
+                <div className="multiplayer-card-heading">
+                  <div>
+                    <p className="eyebrow">CIRCUIT ROSTER</p>
+                    <h3 id="multiplayer-players-title">PLAYERS</h3>
+                  </div>
+                  <span className="multiplayer-player-count">{players.length} <i /> 2</span>
                 </div>
-                <span className="multiplayer-player-count">{players.length} <i /> 2</span>
-              </div>
-              <ul className="multiplayer-player-list">
-                {players.map((player, index) => {
-                  const isCurrentPlayer = player.sessionId === sessionId;
-                  return (
-                    <li className="multiplayer-player" key={player.sessionId}>
-                      <span className="multiplayer-player-index">0{index + 1}</span>
+                <ul className="multiplayer-player-list">
+                  {players.map((player, index) => {
+                    const isCurrentPlayer = player.sessionId === sessionId;
+                    return (
+                      <li className="multiplayer-player" key={player.sessionId}>
+                        <span className="multiplayer-player-index">0{index + 1}</span>
+                        <div className="multiplayer-player-copy">
+                          <strong>{player.displayName}{isCurrentPlayer ? <small> YOU</small> : null}</strong>
+                          <span>{player.wizardId.toUpperCase()} ASPECT</span>
+                        </div>
+                        <span className={`multiplayer-ready-state${player.ready ? " is-ready" : ""}`}>
+                          <span className="status-dot" /> {player.ready ? "READY" : "WAITING"}
+                        </span>
+                      </li>
+                    );
+                  })}
+                  {players.length < 2 && (
+                    <li className="multiplayer-player multiplayer-player-empty">
+                      <span className="multiplayer-player-index">0{players.length + 1}</span>
                       <div className="multiplayer-player-copy">
-                        <strong>{player.displayName}{isCurrentPlayer ? <small> YOU</small> : null}</strong>
-                        <span>{player.wizardId.toUpperCase()} ASPECT</span>
+                        <strong>OPEN SLOT</strong>
+                        <span>ROOM ID REQUIRED</span>
                       </div>
-                      <span className={`multiplayer-ready-state${player.ready ? " is-ready" : ""}`}>
-                        <span className="status-dot" /> {player.ready ? "READY" : "WAITING"}
-                      </span>
+                      <span className="multiplayer-ready-state">AWAITING</span>
                     </li>
-                  );
-                })}
-                {players.length < 2 && (
-                  <li className="multiplayer-player multiplayer-player-empty">
-                    <span className="multiplayer-player-index">0{players.length + 1}</span>
-                    <div className="multiplayer-player-copy">
-                      <strong>OPEN SLOT</strong>
-                      <span>ROOM ID REQUIRED</span>
-                    </div>
-                    <span className="multiplayer-ready-state">AWAITING</span>
-                  </li>
+                  )}
+                </ul>
+              </section>
+
+              <section className="multiplayer-card multiplayer-status-card" aria-live="polite">
+                <p className="eyebrow">ROOM STATUS</p>
+                <h3>{phaseCopy.title}</h3>
+                <p>{phaseCopy.description}</p>
+                {roomState.phase === "finished" ? (
+                  <p className="multiplayer-winner">
+                    {roomState.winnerSessionId === sessionId ? "YOU ARE THE WINNER." : "THE ROOM HAS CLOSED."}
+                  </p>
+                ) : (
+                  <button
+                    className="multiplayer-ready-button"
+                    type="button"
+                    aria-pressed={Boolean(currentPlayer?.ready)}
+                    disabled={!currentPlayer || isBusy}
+                    onClick={handleReadyToggle}
+                  >
+                    <span>{currentPlayer?.ready ? "MARK NOT READY" : "READY UP"}</span>
+                    <span aria-hidden="true">→</span>
+                  </button>
                 )}
-              </ul>
-            </section>
+              </section>
+            </div>
+          )}
 
-            <section className="multiplayer-card multiplayer-status-card" aria-live="polite">
-              <p className="eyebrow">ROOM STATUS</p>
-              <h3>{phaseCopy.title}</h3>
-              <p>{phaseCopy.description}</p>
-              {roomState.phase === "finished" ? (
-                <p className="multiplayer-winner">
-                  {roomState.winnerSessionId === sessionId ? "YOU ARE THE WINNER." : "THE ROOM HAS CLOSED."}
-                </p>
-              ) : (
-                <button
-                  className="multiplayer-ready-button"
-                  type="button"
-                  aria-pressed={Boolean(currentPlayer?.ready)}
-                  disabled={!currentPlayer || isBusy || roomState.phase === "playing"}
-                  onClick={handleReadyToggle}
-                >
-                  <span>{currentPlayer?.ready ? "MARK NOT READY" : "READY UP"}</span>
-                  <span aria-hidden="true">→</span>
-                </button>
-              )}
-              {roomState.phase === "playing" && <span className="multiplayer-next-note">MATCH RENDERING COMING NEXT</span>}
-            </section>
-          </div>
-
-          <footer className="multiplayer-room-footer">
-            <span><span className="status-dot" /> {CONNECTION_LABELS[connectionState]}</span>
-            <span>{roomState.phase === "waiting" ? "SEND THE ROOM ID TO YOUR OPPONENT" : "STAY CONNECTED TO THE CIRCUIT"}</span>
-            <button className="multiplayer-leave-button" type="button" disabled={isBusy} onClick={handleLeave}>
-              {action === "leave" ? "LEAVING..." : "LEAVE ROOM"} <span aria-hidden="true">↗</span>
-            </button>
-          </footer>
+          {roomState.phase !== "playing" && (
+            <footer className="multiplayer-room-footer">
+              <span><span className="status-dot" /> {CONNECTION_LABELS[connectionState]}</span>
+              <span>{roomState.phase === "waiting" ? "SEND THE ROOM ID TO YOUR OPPONENT" : "STAY CONNECTED TO THE CIRCUIT"}</span>
+              <button className="multiplayer-leave-button" type="button" disabled={isBusy} onClick={handleLeave}>
+                {action === "leave" ? "LEAVING..." : "LEAVE ROOM"} <span aria-hidden="true">↗</span>
+              </button>
+            </footer>
+          )}
         </section>
       ) : (
         <section className="multiplayer-hero" aria-labelledby="multiplayer-title">

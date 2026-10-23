@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { MatchState, PlayerState } from "./match-state";
 import {
   isConnectionState,
   isMatchPhase,
@@ -10,6 +11,20 @@ import {
   normalizeServerMessage,
   normalizeReadyState,
 } from "./multiplayer";
+
+test("keeps the Colyseus match schema wire indexes append-only", () => {
+  const matchMetadata = MatchState[Symbol.metadata] as Record<string, { name: string; index: number }>;
+  const playerMetadata = PlayerState[Symbol.metadata] as Record<string, { name: string; index: number }>;
+
+  assert.equal(matchMetadata["0"]?.name, "roomId");
+  assert.equal(matchMetadata["1"]?.name, "phase");
+  assert.equal(matchMetadata["2"]?.name, "players");
+  assert.equal(matchMetadata["3"]?.name, "winnerSessionId");
+  assert.equal(matchMetadata["4"]?.name, "completedStrokes");
+  assert.equal(playerMetadata["0"]?.name, "sessionId");
+  assert.equal(playerMetadata["6"]?.name, "score");
+  assert.equal(playerMetadata["7"]?.name, "shield");
+});
 
 test("normalizes the finite state contracts and rejects unknown states", () => {
   assert.equal(normalizeReadyState(" READY "), "ready");

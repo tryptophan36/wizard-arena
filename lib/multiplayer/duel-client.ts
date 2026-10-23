@@ -1,7 +1,21 @@
 import { Client, type Room } from "@colyseus/sdk";
 
-import type { PongMessage } from "../../server/messages";
-import { MatchState } from "../../server/state";
+import type {
+  DrawEndMessage,
+  DrawPointsMessage,
+  DrawPreviewMessage,
+  DrawEndBroadcastMessage,
+  DrawClearMessage,
+  DrawStartMessage,
+  MatchEndedMessage,
+  PongMessage,
+  SpellAcceptedMessage,
+  SpellImpactMessage,
+  SpellMatchMessage,
+  SpellPhaseMessage,
+  SpellRejectedMessage,
+} from "../../server/messages";
+import { MatchState } from "../../shared/match-state";
 import type { ConnectionState, MatchPhase } from "../../shared/multiplayer";
 
 export const DUEL_ROOM_NAME = "wizard_duel" as const;
@@ -31,6 +45,26 @@ export interface DuelPlayerSnapshot {
   readonly health: number;
   readonly mana: number;
   readonly score: number;
+  readonly shield: boolean;
+  readonly shieldUntil: number;
+  readonly shieldBlockedUntil: number;
+  readonly frozen: boolean;
+  readonly frozenUntil: number;
+  readonly stunned: boolean;
+  readonly stunnedUntil: number;
+  readonly activeSpellId: string;
+  readonly activeSpellPhase: "ready" | "charging" | "flying" | "impact";
+  readonly activeSpellStartedAt: number;
+  readonly activeSpellEndsAt: number;
+  readonly cooldownUntil: number;
+}
+
+export interface DuelCompletedStrokeSnapshot {
+  readonly strokeId: string;
+  readonly ownerSessionId: string;
+  readonly points: ReadonlyArray<{ readonly x: number; readonly y: number; readonly timestamp: number }>;
+  readonly startedAt: number;
+  readonly endedAt: number;
 }
 
 /**
@@ -44,6 +78,7 @@ export interface DuelStateSnapshot {
   readonly roomId: string;
   readonly phase: MatchPhase;
   readonly players: ReadonlyMap<string, DuelPlayerSnapshot>;
+  readonly completedStrokes: ReadonlyMap<string, DuelCompletedStrokeSnapshot>;
   readonly winnerSessionId: string;
 }
 
@@ -51,11 +86,27 @@ export type DuelStateListener = (state: DuelStateSnapshot) => void;
 export type DuelConnectionStateListener = (state: DuelConnectionState) => void;
 export type DuelErrorListener = (error: DuelClientError) => void;
 
+export type DuelRealtimeEvent =
+  | { readonly type: "draw:remote-preview"; readonly payload: DrawPreviewMessage }
+  | { readonly type: "draw:remote-end"; readonly payload: DrawEndBroadcastMessage }
+  | { readonly type: "draw:remote-clear"; readonly payload: DrawClearMessage }
+  | { readonly type: "spell:accepted"; readonly payload: SpellAcceptedMessage }
+  | { readonly type: "spell:rejected"; readonly payload: SpellRejectedMessage }
+  | { readonly type: "spell:phase"; readonly payload: SpellPhaseMessage }
+  | { readonly type: "spell:impact"; readonly payload: SpellImpactMessage }
+  | { readonly type: "match:ended"; readonly payload: MatchEndedMessage };
+
+export type DuelRealtimeEventListener = (event: DuelRealtimeEvent) => void;
+
 export type DuelClientOperation =
   | "create room"
   | "join room"
   | "connection"
   | "send ready state"
+  | "send drawing start"
+  | "send drawing points"
+  | "send drawing end"
+  | "request spell match"
   | "ping"
   | "leave room"
   | "dispose";
@@ -87,6 +138,7 @@ type RoomListeners = {
   leave: (code: number, reason?: string) => void;
   reconnect: () => void;
   drop: (code: number, reason?: string) => void;
+  realtime: Array<() => void>;
 };
 
 /**
@@ -101,6 +153,7 @@ export class DuelClient {
   private readonly stateListeners = new Set<DuelStateListener>();
   private readonly connectionListeners = new Set<DuelConnectionStateListener>();
   private readonly errorListeners = new Set<DuelErrorListener>();
+  private readonly realtimeListeners = new Set<DuelRealtimeEventListener>();
 
   private readonly endpoint: string;
   private room: DuelRoom | null = null;
@@ -242,6 +295,17 @@ export class DuelClient {
     return this.subscribeError(listener);
   }
 
+  /** Subscribe to draw, spell, and match events emitted by the duel room. */
+  public subscribeRealtimeEvent(listener: DuelRealtimeEventListener): () => void {
+    this.realtimeListeners.add(listener);
+    return () => this.realtimeListeners.delete(listener);
+  }
+
+  /** Alias for consumers that use an event-oriented name. */
+  public onRealtimeEvent(listener: DuelRealtimeEventListener): () => void {
+    return this.subscribeRealtimeEvent(listener);
+  }
+
   public sendReady(ready = true): void {
     this.setReady(ready);
   }
@@ -259,6 +323,23 @@ export class DuelClient {
         createClientError("send ready state", cause, "Unable to send ready state."),
       );
     }
+  }
+
+  public sendDrawingStart(payload: DrawStartMessage): void {
+    this.sendRoomMessage("send drawing start", "draw:start", payload);
+  }
+
+  public sendDrawingPoints(payload: DrawPointsMessage): void {
+    this.sendRoomMessage("send drawing points", "draw:points", payload);
+  }
+
+  public sendDrawingEnd(payload: DrawEndMessage): void {
+    this.sendRoomMessage("send drawing end", "draw:end", payload);
+  }
+
+  /** Ask the server to recognize the completed strokes owned by this client. */
+  public requestSpellMatch(payload: SpellMatchMessage = {}): void {
+    this.sendRoomMessage("request spell match", "spell:match", payload);
   }
 
   /**
@@ -345,6 +426,7 @@ export class DuelClient {
     this.stateListeners.clear();
     this.connectionListeners.clear();
     this.errorListeners.clear();
+    this.realtimeListeners.clear();
   }
 
   private join(
@@ -442,8 +524,19 @@ export class DuelClient {
       if (this.room === room) this.setConnectionState("reconnecting");
     };
 
+    const realtime = [
+      this.listenForRealtimeEvent(room, "draw:remote-preview"),
+      this.listenForRealtimeEvent(room, "draw:remote-end"),
+      this.listenForRealtimeEvent(room, "draw:remote-clear"),
+      this.listenForRealtimeEvent(room, "spell:accepted"),
+      this.listenForRealtimeEvent(room, "spell:rejected"),
+      this.listenForRealtimeEvent(room, "spell:phase"),
+      this.listenForRealtimeEvent(room, "spell:impact"),
+      this.listenForRealtimeEvent(room, "match:ended"),
+    ];
+
     this.room = room;
-    this.roomListeners = { state, error, leave, reconnect, drop };
+    this.roomListeners = { state, error, leave, reconnect, drop, realtime };
     room.onStateChange(state);
     room.onError(error);
     room.onLeave(leave);
@@ -485,6 +578,7 @@ export class DuelClient {
       room.onLeave.remove(listeners.leave);
       room.onReconnect.remove(listeners.reconnect);
       room.onDrop.remove(listeners.drop);
+      listeners.realtime.forEach((unsubscribe) => unsubscribe());
     }
 
     this.room = null;
@@ -508,6 +602,35 @@ export class DuelClient {
     throw this.recordError(
       new DuelClientError(operation, "The client is not connected to a room."),
     );
+  }
+
+  private sendRoomMessage<Message>(
+    operation: Extract<
+      DuelClientOperation,
+      "send drawing start" | "send drawing points" | "send drawing end" | "request spell match"
+    >,
+    type: string,
+    payload: Message,
+  ): void {
+    const room = this.requireRoom(operation);
+    try {
+      room.send(type, payload);
+    } catch (cause: unknown) {
+      throw this.recordError(createClientError(operation, cause, `Unable to ${operation}.`));
+    }
+  }
+
+  private listenForRealtimeEvent<T extends DuelRealtimeEvent["type"]>(
+    room: DuelRoom,
+    type: T,
+  ): () => void {
+    return room.onMessage(type, (payload: Extract<DuelRealtimeEvent, { type: T }>["payload"]) => {
+      this.emitRealtimeEvent({ type, payload } as DuelRealtimeEvent);
+    });
+  }
+
+  private emitRealtimeEvent(event: DuelRealtimeEvent): void {
+    for (const listener of this.realtimeListeners) listener(event);
   }
 
   private setConnectionState(state: DuelConnectionState): void {
@@ -567,6 +690,36 @@ function snapshotState(state: MatchState): DuelStateSnapshot {
         health: player.health,
         mana: player.mana,
         score: player.score,
+        shield: player.shield ?? false,
+        shieldUntil: player.shieldUntil ?? 0,
+        shieldBlockedUntil: player.shieldBlockedUntil ?? 0,
+        frozen: player.frozen ?? false,
+        frozenUntil: player.frozenUntil ?? 0,
+        stunned: player.stunned ?? false,
+        stunnedUntil: player.stunnedUntil ?? 0,
+        activeSpellId: player.activeSpellId ?? "",
+        activeSpellPhase: normalizeSpellPhase(player.activeSpellPhase ?? "ready"),
+        activeSpellStartedAt: player.activeSpellStartedAt ?? 0,
+        activeSpellEndsAt: player.activeSpellEndsAt ?? 0,
+        cooldownUntil: player.cooldownUntil ?? 0,
+      }),
+    );
+  }
+
+  const completedStrokes = new Map<string, DuelCompletedStrokeSnapshot>();
+  for (const [key, stroke] of state.completedStrokes?.entries?.() ?? []) {
+    completedStrokes.set(
+      key,
+      Object.freeze({
+        strokeId: stroke.strokeId,
+        ownerSessionId: stroke.ownerSessionId,
+        points: Object.freeze(
+          stroke.points.map((point) =>
+            Object.freeze({ x: point.x, y: point.y, timestamp: point.timestamp }),
+          ),
+        ),
+        startedAt: stroke.startedAt,
+        endedAt: stroke.endedAt,
       }),
     );
   }
@@ -575,8 +728,13 @@ function snapshotState(state: MatchState): DuelStateSnapshot {
     roomId: state.roomId,
     phase: state.phase as MatchPhase,
     players,
+    completedStrokes,
     winnerSessionId: state.winnerSessionId,
   });
+}
+
+function normalizeSpellPhase(value: string): DuelPlayerSnapshot["activeSpellPhase"] {
+  return value === "charging" || value === "flying" || value === "impact" ? value : "ready";
 }
 
 function hasJoinedState(room: DuelRoom): boolean {

@@ -5,6 +5,7 @@ import { after, before, test } from "node:test";
 import { createGameServer } from "../../server/index";
 import {
   DuelClient,
+  type DuelRealtimeEvent,
   normalizeColyseusUrl,
 } from "./duel-client";
 
@@ -86,6 +87,45 @@ test("creates, joins, observes, pings, and leaves a duel room", async () => {
   assert.equal(host.connectionState, "disconnected");
   assert.equal(host.roomId, null);
   assert.equal(host.sessionId, null);
+});
+
+test("sends drawing commands and exposes typed realtime duel events", async () => {
+  const host = new DuelClient({ url: endpoint });
+  const guest = new DuelClient({ url: endpoint });
+  const guestEvents: DuelRealtimeEvent[] = [];
+  const hostEvents: DuelRealtimeEvent[] = [];
+  host.subscribeRealtimeEvent((event) => hostEvents.push(event));
+  guest.subscribeRealtimeEvent((event) => guestEvents.push(event));
+
+  await host.createRoom({ displayName: "Caster", wizardId: "ember" });
+  await guest.joinRoom(host.roomId as string, { displayName: "Target", wizardId: "frost" });
+  host.sendReady();
+  guest.sendReady();
+  await waitFor(() => host.state?.phase === "playing");
+
+  const points = [
+    { x: 500, y: 100, timestamp: 1 },
+    { x: 500, y: 250, timestamp: 2 },
+    { x: 500, y: 400, timestamp: 3 },
+    { x: 500, y: 550, timestamp: 4 },
+    { x: 500, y: 700, timestamp: 5 },
+    { x: 550, y: 650, timestamp: 6 },
+    { x: 600, y: 600, timestamp: 7 },
+  ];
+  host.sendDrawingStart({ strokeId: "adapter-rune", point: points[0] });
+  host.sendDrawingPoints({ strokeId: "adapter-rune", points: points.slice(1) });
+  host.sendDrawingEnd({ strokeId: "adapter-rune", endedAt: 8 });
+  await waitFor(() => guestEvents.some((event) => event.type === "draw:remote-end"));
+  await waitFor(() => host.state?.completedStrokes.size === 1);
+  assert.equal(host.state?.completedStrokes.size, 1);
+
+  host.requestSpellMatch();
+  await waitFor(() => hostEvents.some((event) => event.type === "spell:accepted"));
+  await waitFor(() => guestEvents.some((event) => event.type === "spell:impact"));
+  assert.equal(host.state?.players.get(host.sessionId as string)?.mana, 80);
+
+  await guest.dispose();
+  await host.dispose();
 });
 
 async function waitFor(predicate: () => boolean, timeoutMs = 2_000): Promise<void> {

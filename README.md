@@ -92,10 +92,16 @@ The server also handles normal Colyseus client disconnects through the same
 room lifecycle rules.
 
 The browser connects through [`lib/multiplayer/duel-client.ts`](lib/multiplayer/duel-client.ts),
-a UI-independent adapter around the Colyseus SDK. The lobby does not import or
-manage raw WebSocket lifecycle details. Set `NEXT_PUBLIC_COLYSEUS_URL` when the
-backend is not running at the local default; `.env.example` contains the local
-development values.
+a UI-independent adapter around the Colyseus SDK. The lobby and multiplayer
+arena do not import or manage raw WebSocket lifecycle details. Set
+`NEXT_PUBLIC_COLYSEUS_URL` when the backend is not running at the local default;
+`.env.example` contains the local development values.
+
+The multiplayer arena streams bounded drawing previews, sends completed strokes
+to the room for server-side recognition, and renders server-authored spell
+phases and impacts. Health, mana, cooldowns, shields, freezes, stuns, damage,
+mana drain, and the winner are all resolved by the Colyseus room rather than by
+the browser.
 
 ## Adding a spell
 
@@ -155,9 +161,8 @@ npm run server
 
 Open <http://localhost:3000>. Choose `MULTIPLAYER`, create a room, then open a
 second browser window and join with the displayed room ID. Both players can
-ready up and observe the authoritative room phase transition. The Phaser duel
-surface is the next multiplayer slice; the current `/multiplayer` page is the
-working room/lobby flow.
+ready up, enter the Phaser arena, draw runes, see each other's live drawing,
+and observe server-authoritative spell impacts in real time.
 
 To serve a production build locally:
 

@@ -29,6 +29,7 @@ export type ArenaCallbacks = {
   onPlayerHealthChange: (health: number) => void;
   onEnemyActivityChange: (activity: EnemyActivity) => void;
   onGameStateChange: (state: ArenaGameState) => void;
+  onCountdownChange: (seconds: number | null) => void;
   onCooldownChange: (seconds: number) => void;
   onEnemyCooldownChange: (seconds: number) => void;
   onPhaseChange: (phase: "ready" | "charging" | "flying" | "impact") => void;
@@ -38,6 +39,7 @@ export type ArenaCallbacks = {
 
 const MAX_MANA = 100;
 const MAX_HEALTH = 100;
+const DUEL_COUNTDOWN_DURATION_MS = 3000;
 const MANA_REGEN_PER_SECOND = 5;
 const DEFAULT_FREEZE_DURATION_MS = 2500;
 const SHIELDED_FREEZE_DURATION_MS = 1000;
@@ -103,6 +105,8 @@ export class ArenaScene extends Phaser.Scene {
   private enemyStunnedUntil = 0;
   private enemyFrozenUntil = 0;
   private playerFrozenUntil = 0;
+  private countdownUntil = 0;
+  private countdownValue: number | null = null;
   private nextEnemyDecisionAt: number = OPPONENT_AI_CONFIG.openingDelayMs;
   private enemyActivity: EnemyActivity = "waiting";
 
@@ -229,6 +233,13 @@ export class ArenaScene extends Phaser.Scene {
     this.callbacks.onPlayerHealthChange(this.playerHealth);
     this.callbacks.onEnemyActivityChange(this.enemyActivity);
     this.callbacks.onGameStateChange(this.gameState);
+    if (this.mode === "duel") {
+      this.countdownUntil = (this.game.loop?.time ?? 0) + DUEL_COUNTDOWN_DURATION_MS;
+      this.countdownValue = 3;
+      this.callbacks.onCountdownChange(this.countdownValue);
+    } else {
+      this.callbacks.onCountdownChange(null);
+    }
     this.gestureFeedback = this.getInitialGesture();
     this.callbacks.onSpellChange(this.spell.id);
     this.callbacks.onGestureChange(this.gestureFeedback);
@@ -241,6 +252,20 @@ export class ArenaScene extends Phaser.Scene {
     if (this.gameState !== "playing") {
       this.drawArena(time);
       return;
+    }
+    if (this.mode === "duel" && this.countdownUntil > 0) {
+      const remaining = Math.ceil((this.countdownUntil - time) / 1000);
+      if (remaining > 0) {
+        if (remaining !== this.countdownValue) {
+          this.countdownValue = remaining;
+          this.callbacks.onCountdownChange(remaining);
+        }
+        this.drawArena(time);
+        return;
+      }
+      this.countdownUntil = 0;
+      this.countdownValue = null;
+      this.callbacks.onCountdownChange(null);
     }
     if (this.mode === "duel" && this.phase === "ready" && this.mana < MAX_MANA) this.mana = Math.min(MAX_MANA, this.mana + dt * MANA_REGEN_PER_SECOND);
     if (this.mode === "duel" && this.enemyPhase === "ready" && this.enemyMana < MAX_MANA) this.enemyMana = Math.min(MAX_MANA, this.enemyMana + dt * MANA_REGEN_PER_SECOND);
@@ -432,7 +457,7 @@ export class ArenaScene extends Phaser.Scene {
 
   private handlePointerDown(pointer: Phaser.Input.Pointer) {
     const now = this.game.loop?.time ?? 0;
-    if (this.gameState !== "playing" || pointer.wasTouch || pointer.button !== 0 || now < this.playerFrozenUntil) return;
+    if (this.gameState !== "playing" || this.countdownUntil > now || pointer.wasTouch || pointer.button !== 0 || now < this.playerFrozenUntil) return;
     if (this.gestureActive || (this.phase !== "ready" && this.phase !== "flying")) return;
     this.gestureActive = true;
     this.activeStroke = [{ x: pointer.worldX, y: pointer.worldY, timestamp: now }];
@@ -442,7 +467,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private handlePointerMove(pointer: Phaser.Input.Pointer) {
-    if (!this.gestureActive || !pointer.leftButtonDown() || pointer.wasTouch) return;
+    if (this.countdownUntil > (this.game.loop?.time ?? 0) || !this.gestureActive || !pointer.leftButtonDown() || pointer.wasTouch) return;
     const next = { x: pointer.worldX, y: pointer.worldY, timestamp: this.game.loop?.time ?? 0 };
     const previous = this.activeStroke[this.activeStroke.length - 1];
     if (!previous || Phaser.Math.Distance.Between(previous.x, previous.y, next.x, next.y) >= 4) this.activeStroke.push(next);
@@ -451,7 +476,7 @@ export class ArenaScene extends Phaser.Scene {
   private handlePointerUp(pointer: Phaser.Input.Pointer) {
     if (!this.gestureActive || pointer.wasTouch) return;
     const now = this.game.loop?.time ?? 0;
-    if (now < this.playerFrozenUntil) {
+    if (this.countdownUntil > now || now < this.playerFrozenUntil) {
       this.clearGestureInput();
       return;
     }
@@ -467,7 +492,7 @@ export class ArenaScene extends Phaser.Scene {
 
   private handleMatchKey() {
     const now = this.game.loop?.time ?? 0;
-    if (this.gameState !== "playing" || this.gestureActive || now < this.playerFrozenUntil || this.gestureStrokes.length === 0) return;
+    if (this.gameState !== "playing" || this.countdownUntil > now || this.gestureActive || now < this.playerFrozenUntil || this.gestureStrokes.length === 0) return;
     this.matchGesture(now);
   }
 
@@ -480,7 +505,7 @@ export class ArenaScene extends Phaser.Scene {
   }
 
   private matchGesture(now: number) {
-    if (this.gameState !== "playing" || now < this.playerFrozenUntil || this.gestureStrokes.length === 0) {
+    if (this.gameState !== "playing" || this.countdownUntil > now || now < this.playerFrozenUntil || this.gestureStrokes.length === 0) {
       this.clearGestureInput();
       return;
     }

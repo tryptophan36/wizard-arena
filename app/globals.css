@@ -9,6 +9,10 @@ button { font: inherit; }
 .arena-canvas { position: absolute; inset: 0; z-index: 0; }
 .arena-canvas canvas { display: block; width: 100%; height: 100%; }
 .vignette { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(ellipse at center, transparent 35%, rgba(3,5,18,.2) 65%, rgba(2,3,12,.73) 100%), linear-gradient(180deg, rgba(5,8,23,.36), transparent 27%, transparent 74%, rgba(3,4,16,.55)); }
+.duel-countdown { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; pointer-events: none; background: radial-gradient(circle, rgba(9,13,36,.18), rgba(3,5,18,.48)); }
+.duel-countdown .eyebrow { margin: 0; color: var(--cyan); }
+.duel-countdown strong { display: grid; place-items: center; width: clamp(118px, 18vw, 180px); height: clamp(118px, 18vw, 180px); border: 1px solid rgba(244,191,104,.7); color: var(--gold); font-size: clamp(68px, 11vw, 118px); font-weight: 500; line-height: 1; text-shadow: 0 0 30px rgba(244,191,104,.55); box-shadow: 0 0 45px rgba(114,230,211,.12), inset 0 0 35px rgba(114,230,211,.08); animation: duel-countdown-pulse .95s ease both; }
+@keyframes duel-countdown-pulse { from { opacity: .35; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
 .hud { position: absolute; z-index: 2; pointer-events: none; text-shadow: 0 2px 14px rgba(0,0,0,.45); }
 .eyebrow { margin: 0 0 7px; color: var(--cyan); font-size: 9px; font-weight: 700; letter-spacing: .23em; line-height: 1; }
 .top-hud { top: 30px; left: 42px; right: 42px; display: flex; align-items: flex-start; justify-content: space-between; }
@@ -608,4 +612,81 @@ button { font: inherit; }
   .multiplayer-ready-state { grid-column: 2; margin-top: -4px; }
   .multiplayer-footer-meta span:last-child, .multiplayer-footer-meta i:last-of-type { display: none; }
   .multiplayer-entry-heading small { font-size: 6px; }
+}
+
+/* Multiplayer arena */
+.multiplayer-arena { position: relative; min-height: clamp(560px, 68vh, 720px); margin-top: 18px; overflow: hidden; border: 1px solid rgba(133,149,203,.4); background: var(--ink); box-shadow: 0 24px 80px rgba(0,0,0,.3); isolation: isolate; }
+.multiplayer-arena-canvas { position: absolute; inset: 0; z-index: 0; touch-action: none; user-select: none; }
+.multiplayer-arena-canvas canvas { display: block; width: 100%; height: 100%; }
+.multiplayer-arena-vignette { position: absolute; inset: 0; z-index: 1; pointer-events: none; background: radial-gradient(ellipse at center, transparent 30%, rgba(3,5,18,.2) 63%, rgba(2,3,12,.72) 100%), linear-gradient(180deg, rgba(5,8,23,.42), transparent 27%, transparent 75%, rgba(3,4,16,.62)); }
+.multiplayer-arena-topbar { position: absolute; z-index: 5; top: 17px; right: 18px; left: 18px; display: flex; align-items: center; justify-content: space-between; gap: 18px; pointer-events: none; }
+.multiplayer-arena-channel { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 8px; letter-spacing: .13em; text-shadow: 0 2px 14px rgba(0,0,0,.45); }
+.multiplayer-arena-channel i { display: block; width: 1px; height: 12px; margin: 0 3px; background: rgba(220,220,245,.3); }
+.multiplayer-arena-connection-dot.is-reconnecting { background: var(--gold); box-shadow: 0 0 10px var(--gold); }
+.multiplayer-arena-connection-dot.is-disconnected { background: var(--orange); box-shadow: 0 0 10px var(--orange); }
+.multiplayer-arena-leave { display: inline-flex; align-items: center; gap: 9px; padding: 8px 10px; border: 1px solid rgba(157,164,196,.4); background: rgba(9,13,36,.68); color: var(--cream); cursor: pointer; font-size: 8px; font-weight: 700; letter-spacing: .12em; pointer-events: auto; }
+.multiplayer-arena-leave span { color: var(--cyan); font-size: 13px; }
+.multiplayer-arena-leave:hover:not(:disabled) { border-color: var(--cyan); background: rgba(40,121,116,.3); }
+.multiplayer-arena-leave:disabled { cursor: not-allowed; opacity: .5; }
+.multiplayer-arena-hud { position: absolute; z-index: 4; pointer-events: none; text-shadow: 0 2px 14px rgba(0,0,0,.45); }
+.multiplayer-arena-hud-top { top: 74px; right: 22px; left: 22px; display: grid; grid-template-columns: minmax(210px, 1fr) minmax(190px, .8fr) minmax(210px, 1fr); align-items: start; gap: 24px; }
+.multiplayer-arena-player-card { min-width: 0; padding: 12px 13px; border: 1px solid rgba(133,149,203,.34); background: rgba(9,13,36,.62); }
+.multiplayer-arena-player-card.is-current { border-color: rgba(114,230,211,.52); }
+.multiplayer-arena-player-heading { display: flex; align-items: center; gap: 9px; }
+.multiplayer-arena-player-mark { display: grid; flex: 0 0 auto; place-items: center; width: 30px; height: 32px; border: 1px solid rgba(114,230,211,.52); color: var(--cyan); font-size: 17px; }
+.multiplayer-arena-player-card:not(.is-current) .multiplayer-arena-player-mark { border-color: rgba(244,191,104,.5); color: var(--gold); }
+.multiplayer-arena-player-heading .eyebrow { margin-bottom: 5px; font-size: 7px; }
+.multiplayer-arena-player-heading h3 { overflow: hidden; margin: 0; color: var(--cream); font-size: 11px; letter-spacing: .11em; text-overflow: ellipsis; white-space: nowrap; }
+.multiplayer-arena-player-heading small { display: block; margin-top: 4px; color: var(--muted); font-size: 7px; letter-spacing: .12em; }
+.multiplayer-arena-resource { margin-top: 11px; }
+.multiplayer-arena-resource > div:first-child { display: flex; justify-content: space-between; margin-bottom: 5px; color: var(--muted); font-size: 7px; letter-spacing: .1em; }
+.multiplayer-arena-resource strong { color: var(--cream); font-weight: 500; }
+.multiplayer-arena-bar { height: 3px; background: rgba(34,42,74,.9); }
+.multiplayer-arena-bar span { display: block; height: 100%; transition: width .2s ease; }
+.multiplayer-arena-bar .is-health { background: var(--orange); box-shadow: 0 0 7px rgba(255,120,78,.6); }
+.multiplayer-arena-bar .is-mana { background: var(--cyan); box-shadow: 0 0 7px rgba(114,230,211,.6); }
+.multiplayer-arena-status-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+.multiplayer-arena-status-tags span { padding: 3px 5px; border: 1px solid rgba(143,234,255,.5); color: var(--electric); font-size: 6px; letter-spacing: .1em; }
+.multiplayer-arena-round-status { display: flex; min-width: 0; flex-direction: column; align-items: center; gap: 9px; padding-top: 13px; text-align: center; }
+.multiplayer-arena-feedback { display: flex; min-width: 0; flex-direction: column; gap: 6px; }
+.multiplayer-arena-feedback strong { overflow: hidden; color: var(--cream); font-size: 8px; letter-spacing: .13em; text-overflow: ellipsis; white-space: nowrap; }
+.multiplayer-arena-feedback small { color: var(--cyan); font-size: 7px; letter-spacing: .08em; }
+.multiplayer-arena-feedback-rejected strong { color: #ffb28e; }
+.multiplayer-arena-feedback-rejected small { color: #ff9673; }
+.multiplayer-arena-feedback-accepted strong, .multiplayer-arena-feedback-impact strong { color: var(--gold); }
+.multiplayer-arena-feedback-impact small { color: var(--gold); }
+.multiplayer-arena-phase { padding: 5px 7px; border: 1px solid rgba(244,191,104,.42); color: var(--gold); font-size: 7px; letter-spacing: .13em; }
+.multiplayer-arena-controls { position: absolute; z-index: 4; bottom: 16px; left: 22px; display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 7px; letter-spacing: .13em; pointer-events: none; }
+.multiplayer-arena-controls i { width: 1px; height: 12px; margin: 0 3px; background: rgba(220,220,245,.3); }
+.multiplayer-arena-control-key { padding: 4px 6px; border: 1px solid rgba(114,230,211,.5); color: var(--cyan); }
+.multiplayer-arena-result { position: absolute; z-index: 6; top: 50%; left: 50%; width: min(350px, calc(100% - 38px)); padding: 25px 28px; border: 1px solid rgba(244,191,104,.68); background: rgba(9,13,36,.92); box-shadow: 0 18px 60px rgba(0,0,0,.45); text-align: center; transform: translate(-50%, -50%); }
+.multiplayer-arena-result.is-defeat { border-color: rgba(255,120,78,.72); }
+.multiplayer-arena-result.is-defeat .eyebrow { color: var(--orange); }
+.multiplayer-arena-result h2 { margin: 8px 0 0; color: var(--cream); font-size: 19px; letter-spacing: .14em; }
+.multiplayer-arena-result > p:not(.eyebrow) { margin: 10px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.multiplayer-arena-result-meta { display: flex; justify-content: space-between; margin-top: 18px; padding-top: 12px; border-top: 1px solid rgba(133,149,203,.22); color: var(--muted); font-size: 7px; letter-spacing: .13em; }
+.multiplayer-arena-result-meta strong { color: var(--gold); font-size: 10px; font-weight: 500; }
+
+/* The live duel is a game surface, not another lobby card. Once both players
+   are ready, give Phaser the entire viewport so its resize scale can use the
+   available screen instead of the lobby's content height. */
+.multiplayer-page-playing { width: 100%; height: 100dvh; min-height: 100dvh; padding: 0; overflow: hidden; }
+.multiplayer-page-playing .multiplayer-header,
+.multiplayer-page-playing .multiplayer-footer,
+.multiplayer-page-playing .multiplayer-room-heading,
+.multiplayer-page-playing .multiplayer-room-id { display: none; }
+.multiplayer-page-playing .multiplayer-error { position: absolute; z-index: 10; top: 18px; right: 18px; left: 18px; width: auto; margin: 0; }
+.multiplayer-page-playing .multiplayer-room { display: flex; width: 100%; height: 100%; min-height: 0; padding: 0; }
+.multiplayer-page-playing .multiplayer-arena { flex: 1; width: 100%; min-height: 0; margin: 0; border: 0; box-shadow: none; }
+
+@media (max-width: 760px) {
+  .multiplayer-arena { min-height: 620px; }
+  .multiplayer-arena-topbar { align-items: flex-start; }
+  .multiplayer-arena-channel { max-width: 55%; flex-wrap: wrap; line-height: 1.5; }
+  .multiplayer-arena-channel i, .multiplayer-arena-channel span:last-child { display: none; }
+  .multiplayer-arena-hud-top { top: 79px; right: 12px; left: 12px; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .multiplayer-arena-round-status { grid-column: 1 / -1; grid-row: 2; padding-top: 4px; }
+  .multiplayer-arena-player-card { padding: 10px; }
+  .multiplayer-arena-player-heading h3 { font-size: 9px; }
+  .multiplayer-arena-controls { right: 12px; bottom: 12px; left: 12px; justify-content: center; }
 }

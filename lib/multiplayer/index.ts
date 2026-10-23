@@ -7,6 +7,7 @@ export {
   normalizeColyseusUrl,
 } from "./duel-client";
 export type {
+  DuelCompletedStrokeSnapshot,
   DuelClientOperation,
   DuelClientOptions,
   DuelConnectionState,
@@ -14,6 +15,8 @@ export type {
   DuelErrorListener,
   DuelJoinOptions,
   DuelPlayerSnapshot,
+  DuelRealtimeEvent,
+  DuelRealtimeEventListener,
   DuelStateListener,
   DuelStateSnapshot,
 } from "./duel-client";
