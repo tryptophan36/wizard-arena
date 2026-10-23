@@ -83,14 +83,14 @@ function estimateCircle(stroke: RuneStroke): CircleEstimate | null {
   };
 }
 
-function isCircle(estimate: CircleEstimate, dimension: number, minimumLength: number) {
-  const minimumRadius = Math.max(16, dimension * 0.035);
-  const closureTolerance = Math.max(14, dimension * 0.035);
+/** Shape-quality only — no arena-scaled size floor so small rings still match. */
+function isCircle(estimate: CircleEstimate) {
+  const minimumRadius = 3;
+  const closureTolerance = Math.max(4, estimate.radius * 0.45);
   const circumferenceRatio = estimate.pathLength / Math.max(FULL_TURN * estimate.radius, 1);
   return (
     estimate.sharpTurns <= 1 &&
     estimate.radius >= minimumRadius &&
-    estimate.pathLength >= Math.min(minimumLength, Math.max(58, dimension * 0.055)) &&
     estimate.closureDistance <= closureTolerance &&
     estimate.circularity <= 0.34 &&
     circumferenceRatio >= 0.68 &&
@@ -103,12 +103,12 @@ function isCircle(estimate: CircleEstimate, dimension: number, minimumLength: nu
 
 /** Recognize exactly three separate, closed circular strokes. */
 export function recognizeGhostPortalStrokes(strokes: RuneStroke[], arenaDimension: number): RuneRecognition {
-  const dimension = Math.max(1, arenaDimension);
+  void arenaDimension;
   const expectedStrokes = 3;
-  const minimumLength = Math.max(280, dimension * 0.3);
-  const minimumStrokeLength = Math.max(58, dimension * 0.055);
+  // Reporting floor only — recognition no longer rejects small rings by length.
+  const minimumLength = 36;
+  const minimumStrokeLength = 12;
   const minimumStrokeLengths = Array.from({ length: expectedStrokes }, () => minimumStrokeLength);
-  const minimumCenterSeparation = Math.max(28, dimension * 0.08);
   const makePortalRecognition = (
     values: Parameters<typeof makeRecognition>[3],
     pauseMs?: number,
@@ -126,7 +126,7 @@ export function recognizeGhostPortalStrokes(strokes: RuneStroke[], arenaDimensio
   for (let index = 0; index < strokes.length; index += 1) {
     const stroke = strokes[index];
     const circle = estimateCircle(stroke);
-    if (!circle || !isCircle(circle, dimension, minimumLength)) {
+    if (!circle || !isCircle(circle)) {
       return makePortalRecognition({
         recognized: false,
         stage: index === 0 ? "first-stroke" : "second-stroke",
@@ -154,14 +154,12 @@ export function recognizeGhostPortalStrokes(strokes: RuneStroke[], arenaDimensio
 
   const circlesAreSeparate = circles.every((circle, index) => circles.every((other, otherIndex) => {
     if (index === otherIndex) return true;
-    const requiredSeparation = Math.max(minimumCenterSeparation, (circle.radius + other.radius) * 0.8);
+    const requiredSeparation = Math.max(8, (circle.radius + other.radius) * 0.8);
     return distance(circle.center, other.center) >= requiredSeparation;
   }));
   if (!circlesAreSeparate) {
     return makePortalRecognition({ recognized: false, stage: "failed", progress: 0.86, reason: "stroke-position", hint: "KEEP THE THREE CIRCLES SEPARATE" });
   }
 
-  const totalLength = circles.reduce((total, circle) => total + circle.pathLength, 0);
-  if (totalLength < minimumLength) return makePortalRecognition({ recognized: false, stage: "failed", progress: clampProgress(totalLength / minimumLength), reason: "too-short", hint: "DRAW THREE LARGER PORTAL CIRCLES" });
   return makePortalRecognition({ recognized: true, stage: "complete", progress: 1, hint: "THREE SEPARATE CIRCLES ACCEPTED" });
 }

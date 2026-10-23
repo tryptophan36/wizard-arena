@@ -19,10 +19,11 @@ import {
  * Timing is optional and is only used to validate stroke ordering.
  */
 export function recognizeEmberLanceStrokes(strokes: RuneStroke[], arenaDimension: number): RuneRecognition {
-  const dimension = Math.max(1, arenaDimension);
-  const minimumLength = Math.max(120, dimension * 0.12);
-  const minimumFirstLength = Math.max(55, dimension * 0.1);
-  const minimumHookLength = Math.max(28, dimension * 0.055);
+  void arenaDimension;
+  // Tiny absolute floors only — no arena-scaled "draw larger" gate.
+  const minimumLength = 28;
+  const minimumFirstLength = 12;
+  const minimumHookLength = 8;
   const minimumStrokeLengths: [number, number] = [minimumFirstLength, minimumHookLength];
 
   if (strokes.length === 0) {
@@ -62,12 +63,12 @@ export function recognizeEmberLanceStrokes(strokes: RuneStroke[], arenaDimension
     const end = first.points[first.points.length - 1];
     const downwardTravel = lowest.y - start.y;
     const sidewaysTravel = Math.abs(lowest.x - start.x);
-    const minimumDrop = Math.max(35, dimension * 0.075);
+    const minimumDrop = 10;
     const hookDx = end.x - lowest.x;
     const hookRise = lowest.y - end.y;
     const hookLength = runePathLength(first.points.slice(lowestIndex));
     const straightness = distance(start, lowest) / Math.max(runePathLength(first.points.slice(0, lowestIndex + 1)), 1);
-    const minimumHook = Math.max(28, dimension * 0.055);
+    const minimumHook = minimumHookLength;
 
     if (
       lowestIndex >= 2 &&
@@ -103,15 +104,15 @@ export function recognizeEmberLanceStrokes(strokes: RuneStroke[], arenaDimension
   const firstEnd = first.points[first.points.length - 1];
   const downwardTravel = firstEnd.y - firstStart.y;
   const sidewaysTravel = Math.abs(firstEnd.x - firstStart.x);
-  const minimumDrop = Math.max(35, dimension * 0.075);
+  const minimumDrop = 10;
   const straightness = distance(firstStart, firstEnd) / firstLength;
-  const maxUpwardBacktrack = Math.max(12, downwardTravel * 0.22);
+  const maxUpwardBacktrack = Math.max(4, downwardTravel * 0.22);
   const highestAfterDrop = Math.max(...first.points.map((point) => point.y));
   const upwardBacktrack = highestAfterDrop - firstEnd.y;
 
   if (
     downwardTravel < minimumDrop ||
-    sidewaysTravel > Math.max(24, downwardTravel * 0.65) ||
+    sidewaysTravel > Math.max(8, downwardTravel * 0.65) ||
     straightness < 0.72 ||
     upwardBacktrack > maxUpwardBacktrack
   ) {
@@ -149,7 +150,7 @@ export function recognizeEmberLanceStrokes(strokes: RuneStroke[], arenaDimension
   const secondStart = second.points[0];
   const secondEnd = second.points[second.points.length - 1];
   const gapDistance = distance(firstEnd, secondStart);
-  const positionTolerance = Math.max(24, dimension * 0.1);
+  const positionTolerance = Math.max(16, firstLength * 0.35);
   const firstEndTime = strokeEndTime(first);
   const secondStartTime = strokeStartTime(second);
   const pauseMs = firstEndTime !== undefined && secondStartTime !== undefined ? secondStartTime - firstEndTime : undefined;
@@ -189,17 +190,6 @@ export function recognizeEmberLanceStrokes(strokes: RuneStroke[], arenaDimension
       progress: 0.72,
       reason: "diagonal-hook",
       hint: "FINISH WITH AN UP-RIGHT DIAGONAL HOOK",
-    }, pauseMs, gapDistance);
-  }
-
-  const totalLength = firstLength + secondLength;
-  if (totalLength < minimumLength) {
-    return makeRecognition(strokes, minimumLength, minimumStrokeLengths, {
-      recognized: false,
-      stage: "failed",
-      progress: clampProgress(totalLength / minimumLength),
-      reason: "too-short",
-      hint: "DRAW A LONGER EMBER LANCE RUNE",
     }, pauseMs, gapDistance);
   }
 

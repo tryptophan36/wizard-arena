@@ -303,7 +303,11 @@ export class DuelRoom extends Room<DuelRoomOptions> {
     }
 
     const finalPoints = message.points ?? [];
-    if (activeStroke.points.length + finalPoints.length > MAX_DRAW_POINTS_PER_STROKE) {
+    const normalizedPoints = message.normalizedPoints;
+    if (
+      activeStroke.points.length + finalPoints.length > MAX_DRAW_POINTS_PER_STROKE ||
+      (normalizedPoints !== undefined && normalizedPoints.length > MAX_DRAW_POINTS_PER_STROKE)
+    ) {
       this.activeStrokes.delete(client.sessionId);
       this.sendRemoteClear(client, activeStroke.strokeId, "invalid");
       return;
@@ -311,8 +315,13 @@ export class DuelRoom extends Room<DuelRoomOptions> {
     activeStroke.points.push(...finalPoints.map(copyPoint));
     this.activeStrokes.delete(client.sessionId);
 
+    // Shape tools stream the user's raw pointer path for the live preview, then
+    // provide their closed/straightened result here for the authoritative
+    // recognizer. Freehand strokes omit this field and keep the raw path.
+    const completedPoints = normalizedPoints?.map(copyPoint) ?? activeStroke.points;
+
     const stroke: RuneStroke = {
-      points: activeStroke.points.map(copyPoint),
+      points: completedPoints,
       ...(message.startedAt ?? activeStroke.startedAt) === undefined
         ? {}
         : { startedAt: message.startedAt ?? activeStroke.startedAt },

@@ -61,6 +61,8 @@ export interface DrawPointsMessage {
 export interface DrawEndMessage {
   strokeId?: string;
   points?: DrawPointMessage[];
+  /** Optional client-side shape-tool result used for final recognition. */
+  normalizedPoints?: DrawPointMessage[];
   point?: DrawPointMessage;
   startedAt?: number;
   endedAt?: number;
@@ -275,12 +277,23 @@ export function normalizeDrawEndMessage(value: unknown): DrawEndMessage | null {
   if (!Array.isArray(rawPoints) || rawPoints.length > MAX_DRAW_POINTS_PER_PACKET) return null;
   const points = rawPoints.map(normalizeDrawPoint);
   if (points.some((point): point is null => point === null)) return null;
+
+  const rawNormalizedPoints = value.normalizedPoints;
+  let normalizedPoints: DrawPointMessage[] | undefined;
+  if (rawNormalizedPoints !== undefined) {
+    if (!Array.isArray(rawNormalizedPoints) || rawNormalizedPoints.length > MAX_DRAW_POINTS_PER_PACKET) return null;
+    const normalized = rawNormalizedPoints.map(normalizeDrawPoint);
+    if (normalized.some((point): point is null => point === null)) return null;
+    normalizedPoints = normalized as DrawPointMessage[];
+  }
+
   const startedAt = normalizeTimestamp(value.startedAt);
   const endedAt = normalizeTimestamp(value.endedAt);
   if (startedAt === null || endedAt === null) return null;
   return {
     ...(strokeId === undefined ? {} : { strokeId }),
     ...(points.length === 0 ? {} : { points: points as DrawPointMessage[] }),
+    ...(normalizedPoints === undefined ? {} : { normalizedPoints }),
     ...(startedAt === undefined ? {} : { startedAt }),
     ...(endedAt === undefined ? {} : { endedAt }),
   };

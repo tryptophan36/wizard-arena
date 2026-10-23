@@ -14,9 +14,10 @@ export const LIGHTNING_RUNE_HINT = "STROKE 1: DOWN-RIGHT · STROKE 2: DOWN-LEFT 
 
 /** Recognize a three-stroke zig-zag bolt, or the same bolt drawn continuously. */
 export function recognizeLightningStrokes(strokes: RuneStroke[], arenaDimension: number): RuneRecognition {
-  const dimension = Math.max(1, arenaDimension);
-  const minimumLength = Math.max(150, dimension * 0.14);
-  const minimumStrokeLengths = [Math.max(38, dimension * 0.07), Math.max(38, dimension * 0.07), Math.max(28, dimension * 0.05)];
+  void arenaDimension;
+  // Tiny absolute floors only — no arena-scaled "draw larger" gate.
+  const minimumLength = 36;
+  const minimumStrokeLengths = [10, 10, 8];
   const makeLightningRecognition = (
     values: Parameters<typeof makeRecognition>[3],
     pauseMs?: number,
@@ -37,13 +38,13 @@ export function recognizeLightningStrokes(strokes: RuneStroke[], arenaDimension:
     let previousHorizontalDirection = 0;
     for (let index = 1; index < first.points.length; index += 1) {
       const dx = first.points[index].x - first.points[index - 1].x;
-      if (Math.abs(dx) < 3) continue;
+      if (Math.abs(dx) < 1.5) continue;
       const horizontalDirection = Math.sign(dx);
       if (previousHorizontalDirection !== 0 && horizontalDirection !== previousHorizontalDirection) directionChanges += 1;
       previousHorizontalDirection = horizontalDirection;
     }
     const downwardTravel = first.points[first.points.length - 1].y - first.points[0].y;
-    if (directionChanges >= 2 && downwardTravel >= dimension * 0.12) {
+    if (directionChanges >= 2 && downwardTravel >= 16) {
       return makeLightningRecognition({ recognized: true, stage: "complete", progress: 1, hint: "CONTINUOUS BOLT ACCEPTED" });
     }
   }
@@ -52,7 +53,7 @@ export function recognizeLightningStrokes(strokes: RuneStroke[], arenaDimension:
     return makeLightningRecognition({ recognized: false, stage: "first-stroke", progress: clampProgress(firstLength / minimumStrokeLengths[0] * 0.3), reason: "too-short", hint: "MAKE STROKE 1 A LONG DOWN-RIGHT LINE" });
   }
 
-  const positionTolerance = Math.max(28, dimension * 0.1);
+  const positionTolerance = Math.max(16, firstLength * 0.45);
   const validateStroke = (stroke: RuneStroke, index: number) => {
     const start = stroke.points[0];
     const end = stroke.points[stroke.points.length - 1];
@@ -99,11 +100,6 @@ export function recognizeLightningStrokes(strokes: RuneStroke[], arenaDimension:
 
   if (strokes.length < 3) {
     return makeLightningRecognition({ recognized: false, stage: "awaiting-next-stroke", progress: 0.67, reason: "stroke-count", hint: "LIFT, THEN FINISH WITH A DOWN-RIGHT STROKE" });
-  }
-
-  const totalLength = strokes.reduce((total, stroke) => total + runeStrokePathLength(stroke), 0);
-  if (totalLength < minimumLength) {
-    return makeLightningRecognition({ recognized: false, stage: "failed", progress: clampProgress(totalLength / minimumLength), reason: "too-short", hint: "DRAW A LONGER LIGHTNING BOLT" });
   }
 
   return makeLightningRecognition({ recognized: true, stage: "complete", progress: 1, hint: "THREE-STROKE BOLT ACCEPTED" });

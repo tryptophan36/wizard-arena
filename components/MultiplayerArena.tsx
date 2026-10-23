@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import MultiplayerPhaserArena from "@/components/MultiplayerPhaserArena";
 import type { MultiplayerArenaFeedback } from "@/game/MultiplayerArenaScene";
+import { DEFAULT_DRAWING_TOOL, type DrawingTool } from "@/game/drawingTool";
 import type {
   DuelClient,
   DuelConnectionState,
@@ -33,6 +34,13 @@ const DEFAULT_FEEDBACK: MultiplayerArenaFeedback = {
   hint: "TRACE A REGISTERED SYMBOL · PRESS A TO MATCH",
 };
 
+const DRAWING_TOOLS: readonly { id: DrawingTool; label: string; icon: string }[] = [
+  { id: "freehand", label: "FREEHAND", icon: "∿" },
+  { id: "circle", label: "CIRCLE", icon: "○" },
+  { id: "square", label: "SQUARE", icon: "□" },
+  { id: "line", label: "LINE", icon: "╱" },
+];
+
 export default function MultiplayerArena({
   client,
   roomState,
@@ -42,6 +50,7 @@ export default function MultiplayerArena({
   onLeave,
 }: MultiplayerArenaProps) {
   const [feedback, setFeedback] = useState<MultiplayerArenaFeedback>(DEFAULT_FEEDBACK);
+  const [drawingTool, setDrawingTool] = useState<DrawingTool>(DEFAULT_DRAWING_TOOL);
   const onFeedback = useCallback((nextFeedback: MultiplayerArenaFeedback) => {
     setFeedback(nextFeedback);
   }, []);
@@ -68,8 +77,27 @@ export default function MultiplayerArena({
         </button>
       </div>
 
-      <MultiplayerPhaserArena client={client} onFeedback={onFeedback} />
+      <MultiplayerPhaserArena client={client} onFeedback={onFeedback} drawingTool={drawingTool} />
       <div className="multiplayer-arena-vignette" aria-hidden="true" />
+
+      <nav className="drawing-toolbar" aria-label="Rune drawing tool">
+        <span className="drawing-toolbar-label">DRAWING TOOL</span>
+        <div className="drawing-tool-list">
+          {DRAWING_TOOLS.map((tool) => (
+            <button
+              className="drawing-tool"
+              type="button"
+              key={tool.id}
+              aria-pressed={drawingTool === tool.id}
+              onClick={() => setDrawingTool(tool.id)}
+              title={`Use ${tool.label.toLowerCase()} tool`}
+            >
+              <span className="drawing-tool-icon" aria-hidden="true">{tool.icon}</span>
+              <span>{tool.label}</span>
+            </button>
+          ))}
+        </div>
+      </nav>
 
       <div className="multiplayer-arena-hud multiplayer-arena-hud-top">
         <ArenaPlayerCard label="YOUR SIGIL" player={currentPlayer} isCurrent />
