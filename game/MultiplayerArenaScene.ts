@@ -258,18 +258,13 @@ export class MultiplayerArenaScene extends Phaser.Scene {
     }
   }
 
-  /** Match computer mode's ~4px / ~2px pointer filters in screen space. */
-  private minPointDistance(screenPixels: number): number {
-    return screenPixels / Math.max(this.getArenaLayout().scale, 1e-6);
-  }
-
   private handlePointerMove(pointer: Phaser.Input.Pointer): void {
     const stroke = this.localStroke;
     if (!stroke || (!pointer.leftButtonDown() && !pointer.wasTouch)) return;
 
     const point = this.toCanonicalPoint(pointer);
     const previous = stroke.points[stroke.points.length - 1];
-    if (previous && distance(previous, point) < this.minPointDistance(4)) return;
+    if (previous && distance(previous, point) <= Number.EPSILON) return;
     stroke.points.push(point);
     this.localStrokes.set(stroke.strokeId, stroke.points);
     this.flushStrokePoints(stroke);
@@ -281,7 +276,7 @@ export class MultiplayerArenaScene extends Phaser.Scene {
 
     const point = this.toCanonicalPoint(pointer);
     const previous = stroke.points[stroke.points.length - 1];
-    const hasFinalPoint = !previous || distance(previous, point) >= this.minPointDistance(2);
+    const hasFinalPoint = !previous || distance(previous, point) > Number.EPSILON;
     if (hasFinalPoint) stroke.points.push(point);
     const normalizedPoints = normalizeDrawingStroke(stroke.points, this.drawingTool);
     this.localStrokes.set(stroke.strokeId, normalizedPoints);
@@ -294,6 +289,7 @@ export class MultiplayerArenaScene extends Phaser.Scene {
       this.flushStrokePoints(stroke, true);
       this.client.sendDrawingEnd({
         strokeId: stroke.strokeId,
+        drawingTool: this.drawingTool,
         normalizedPoints: this.drawingTool === "freehand" ? undefined : normalizedPoints,
         startedAt: stroke.startedAt,
         endedAt: Date.now(),

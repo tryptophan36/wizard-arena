@@ -64,13 +64,13 @@ export function recognizeEmberLanceStrokes(strokes: RuneStroke[], arenaDimension
     const hookDx = end.x - lowest.x;
     const hookRise = lowest.y - end.y;
     const hookLength = runePathLength(first.points.slice(lowestIndex));
-    const straightness = distance(start, lowest) / Math.max(runePathLength(first.points.slice(0, lowestIndex + 1)), 1);
+    const straightness = distance(start, lowest) / Math.max(runePathLength(first.points.slice(0, lowestIndex + 1)), Number.EPSILON);
 
     if (
       lowestIndex >= 2 &&
       lowestIndex <= first.points.length - 3 &&
       downwardTravel > 0 &&
-      sidewaysTravel <= Math.max(24, downwardTravel * 0.65) &&
+      sidewaysTravel <= downwardTravel * 0.65 &&
       hookLength > 0 &&
       hookDx > 0 &&
       hookRise > 0 &&
@@ -100,14 +100,14 @@ export function recognizeEmberLanceStrokes(strokes: RuneStroke[], arenaDimension
   const firstEnd = first.points[first.points.length - 1];
   const downwardTravel = firstEnd.y - firstStart.y;
   const sidewaysTravel = Math.abs(firstEnd.x - firstStart.x);
-  const straightness = distance(firstStart, firstEnd) / firstLength;
+  const straightness = distance(firstStart, firstEnd) / Math.max(firstLength, Number.EPSILON);
   const maxUpwardBacktrack = Math.max(0, downwardTravel * 0.22);
   const highestAfterDrop = Math.max(...first.points.map((point) => point.y));
   const upwardBacktrack = highestAfterDrop - firstEnd.y;
 
   if (
     downwardTravel <= 0 ||
-    sidewaysTravel > Math.max(24, downwardTravel * 0.65) ||
+    sidewaysTravel > downwardTravel * 0.65 ||
     straightness < 0.72 ||
     upwardBacktrack > maxUpwardBacktrack
   ) {
@@ -145,7 +145,7 @@ export function recognizeEmberLanceStrokes(strokes: RuneStroke[], arenaDimension
   const secondStart = second.points[0];
   const secondEnd = second.points[second.points.length - 1];
   const gapDistance = distance(firstEnd, secondStart);
-  const positionTolerance = Math.max(1, distance(firstStart, firstEnd) * 0.35);
+  const positionTolerance = Math.max(Number.EPSILON, distance(firstStart, firstEnd) * 0.35);
   const firstEndTime = strokeEndTime(first);
   const secondStartTime = strokeStartTime(second);
   const pauseMs = firstEndTime !== undefined && secondStartTime !== undefined ? secondStartTime - firstEndTime : undefined;
@@ -172,7 +172,7 @@ export function recognizeEmberLanceStrokes(strokes: RuneStroke[], arenaDimension
 
   const hookDx = secondEnd.x - secondStart.x;
   const hookRise = secondStart.y - secondEnd.y;
-  const hookStraightness = distance(secondStart, secondEnd) / Math.max(secondLength, 1);
+  const hookStraightness = distance(secondStart, secondEnd) / Math.max(secondLength, Number.EPSILON);
   if (
     hookDx <= 0 ||
     hookRise <= 0 ||

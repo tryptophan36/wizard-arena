@@ -2,6 +2,7 @@ import { Room, type Client } from "colyseus";
 
 import { recognizeAnySpell } from "../../game/spellRecognition";
 import { SPELLS, type SpellData } from "../../game/spellData";
+import { normalizeDrawingStroke } from "../../game/drawingTool";
 import type { RuneStroke } from "../../game/recognition/shared";
 import {
   MAX_DRAW_POINTS_PER_STROKE,
@@ -315,10 +316,13 @@ export class DuelRoom extends Room<DuelRoomOptions> {
     activeStroke.points.push(...finalPoints.map(copyPoint));
     this.activeStrokes.delete(client.sessionId);
 
-    // Shape tools stream the user's raw pointer path for the live preview, then
-    // provide their closed/straightened result here for the authoritative
-    // recognizer. Freehand strokes omit this field and keep the raw path.
-    const completedPoints = normalizedPoints?.map(copyPoint) ?? activeStroke.points;
+    // Shape tools stream the user's raw pointer path for the live preview. The
+    // server re-normalizes that canonical path so recognition is independent of
+    // the browser's viewport scale. Keep the old normalizedPoints fallback for
+    // older clients that do not send drawingTool yet.
+    const completedPoints = message.drawingTool !== undefined
+      ? normalizeDrawingStroke(activeStroke.points, message.drawingTool)
+      : normalizedPoints?.map(copyPoint) ?? activeStroke.points;
 
     const stroke: RuneStroke = {
       points: completedPoints,

@@ -161,7 +161,7 @@ test("relays drawing preview, matches a server-owned rune, and applies authorita
   await host.leave(true);
 });
 
-test("uses the client shape-tool result for final rune recognition", async () => {
+test("normalizes small shape-tool input on the server for final rune recognition", async () => {
   const host = await client.joinOrCreate(
     ROOM_NAME,
     { displayName: "Shape Caster", wizardId: "ember" },
@@ -179,21 +179,24 @@ test("uses the client shape-tool result for final rune recognition", async () =>
   const accepted = waitForMessage<{ spellId: string; phase: string }>(host, "spell:accepted");
   const remoteEnd = waitForMessage<{ stroke: { points: Array<{ x: number; y: number }> } }>(guest, "draw:remote-end");
   host.send("draw:start", { strokeId: "shape-aegis", point: { x: 120, y: 120, timestamp: 1 } });
-  host.send("draw:end", {
+  host.send("draw:points", {
     strokeId: "shape-aegis",
-    normalizedPoints: [
-      { x: 120, y: 120, timestamp: 1 },
-      { x: 320, y: 120, timestamp: 2 },
-      { x: 320, y: 320, timestamp: 3 },
-      { x: 120, y: 320, timestamp: 4 },
+    points: [
+      { x: 120.25, y: 120, timestamp: 2 },
+      { x: 120.25, y: 120.25, timestamp: 3 },
+      { x: 120, y: 120.25, timestamp: 4 },
       { x: 120, y: 120, timestamp: 5 },
     ],
+  });
+  host.send("draw:end", {
+    strokeId: "shape-aegis",
+    drawingTool: "square",
     endedAt: 5,
   });
 
   const remoteEndMessage = await remoteEnd;
   assert.equal(remoteEndMessage.stroke.points.length, 5);
-  assert.equal(remoteEndMessage.stroke.points[1]?.x, 320);
+  assert.equal(remoteEndMessage.stroke.points[1]?.x, 120.25);
 
   host.send("spell:match", {});
   const acceptedMessage = await accepted;

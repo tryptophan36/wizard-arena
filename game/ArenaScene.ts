@@ -470,7 +470,7 @@ export class ArenaScene extends Phaser.Scene {
     if (this.countdownUntil > (this.game.loop?.time ?? 0) || !this.gestureActive || !pointer.leftButtonDown() || pointer.wasTouch) return;
     const next = { x: pointer.worldX, y: pointer.worldY, timestamp: this.game.loop?.time ?? 0 };
     const previous = this.activeStroke[this.activeStroke.length - 1];
-    if (!previous || Phaser.Math.Distance.Between(previous.x, previous.y, next.x, next.y) >= 4) this.activeStroke.push(next);
+    if (!previous || Phaser.Math.Distance.Between(previous.x, previous.y, next.x, next.y) > Number.EPSILON) this.activeStroke.push(next);
   }
 
   private handlePointerUp(pointer: Phaser.Input.Pointer) {
@@ -483,7 +483,7 @@ export class ArenaScene extends Phaser.Scene {
     this.gestureActive = false;
     const finalPoint = { x: pointer.worldX, y: pointer.worldY, timestamp: now };
     const previous = this.activeStroke[this.activeStroke.length - 1];
-    if (!previous || Phaser.Math.Distance.Between(previous.x, previous.y, finalPoint.x, finalPoint.y) >= 2) this.activeStroke.push(finalPoint);
+    if (!previous || Phaser.Math.Distance.Between(previous.x, previous.y, finalPoint.x, finalPoint.y) > Number.EPSILON) this.activeStroke.push(finalPoint);
     const points = normalizeDrawingStroke(this.activeStroke, this.drawingTool);
     this.gestureStrokes.push({ points, startedAt: points[0]?.timestamp, endedAt: now });
     this.activeStroke = [];

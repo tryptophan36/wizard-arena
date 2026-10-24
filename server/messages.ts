@@ -1,4 +1,5 @@
 import type { RuneStroke } from "../game/recognition/shared";
+import type { DrawingTool } from "../game/drawingTool";
 
 /** The spell ids shipped in data/spells.json. */
 export const SUPPORTED_SPELL_IDS = [
@@ -61,7 +62,9 @@ export interface DrawPointsMessage {
 export interface DrawEndMessage {
   strokeId?: string;
   points?: DrawPointMessage[];
-  /** Optional client-side shape-tool result used for final recognition. */
+  /** The client drawing tool, so the server can normalize shape input authoritatively. */
+  drawingTool?: DrawingTool;
+  /** Legacy client-side shape-tool result kept for older clients. */
   normalizedPoints?: DrawPointMessage[];
   point?: DrawPointMessage;
   startedAt?: number;
@@ -278,6 +281,9 @@ export function normalizeDrawEndMessage(value: unknown): DrawEndMessage | null {
   const points = rawPoints.map(normalizeDrawPoint);
   if (points.some((point): point is null => point === null)) return null;
 
+  const drawingTool = value.drawingTool;
+  if (drawingTool !== undefined && drawingTool !== "freehand" && drawingTool !== "circle" && drawingTool !== "square" && drawingTool !== "line") return null;
+
   const rawNormalizedPoints = value.normalizedPoints;
   let normalizedPoints: DrawPointMessage[] | undefined;
   if (rawNormalizedPoints !== undefined) {
@@ -293,6 +299,7 @@ export function normalizeDrawEndMessage(value: unknown): DrawEndMessage | null {
   return {
     ...(strokeId === undefined ? {} : { strokeId }),
     ...(points.length === 0 ? {} : { points: points as DrawPointMessage[] }),
+    ...(drawingTool === undefined ? {} : { drawingTool }),
     ...(normalizedPoints === undefined ? {} : { normalizedPoints }),
     ...(startedAt === undefined ? {} : { startedAt }),
     ...(endedAt === undefined ? {} : { endedAt }),

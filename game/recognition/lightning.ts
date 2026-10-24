@@ -13,7 +13,7 @@ export const LIGHTNING_RUNE_HINT = "STROKE 1: DOWN-RIGHT · STROKE 2: DOWN-LEFT 
 
 /** Recognize a three-stroke zig-zag bolt, or the same bolt drawn continuously. */
 export function recognizeLightningStrokes(strokes: RuneStroke[], arenaDimension: number): RuneRecognition {
-  const dimension = Math.max(1, arenaDimension);
+  void arenaDimension;
   const minimumLength = 0;
   const minimumStrokeLengths = [0, 0, 0];
   const makeLightningRecognition = (
@@ -51,7 +51,7 @@ export function recognizeLightningStrokes(strokes: RuneStroke[], arenaDimension:
     return makeLightningRecognition({ recognized: false, stage: "first-stroke", progress: 0, reason: "too-short", hint: "MAKE STROKE 1 A LONG DOWN-RIGHT LINE" });
   }
 
-  const positionTolerance = Math.max(16, firstLength * 0.45);
+  const positionTolerance = Math.max(Number.EPSILON, firstLength * 0.45);
   const validateStroke = (stroke: RuneStroke, index: number) => {
     const start = stroke.points[0];
     const end = stroke.points[stroke.points.length - 1];
@@ -63,7 +63,7 @@ export function recognizeLightningStrokes(strokes: RuneStroke[], arenaDimension:
       length,
       dx,
       dy,
-      valid: stroke.points.length >= 2 && dy > 0 && expectedDirection * dx > 0 && distance(start, end) / Math.max(length, 1) >= 0.58,
+      valid: stroke.points.length >= 2 && dy > 0 && expectedDirection * dx > 0 && distance(start, end) / Math.max(length, Number.EPSILON) >= 0.58,
     };
   };
 
