@@ -44,7 +44,7 @@ function estimateCircle(stroke: RuneStroke): CircleEstimate | null {
   const radii = points.map((point) => distance(center, point));
   const radius = radii.reduce((total, value) => total + value, 0) / radii.length;
   const radialVariance = radii.reduce((total, value) => total + (value - radius) ** 2, 0) / radii.length;
-  const radialDeviation = Math.sqrt(radialVariance) / Math.max(radius, 1);
+  const radialDeviation = Math.sqrt(radialVariance) / Math.max(radius, Number.EPSILON);
   const pathLength = runeStrokePathLength(stroke);
   let angularTravel = 0;
   let signedAngularTravel = 0;
@@ -64,15 +64,15 @@ function estimateCircle(stroke: RuneStroke): CircleEstimate | null {
     const outgoing = { x: next.x - current.x, y: next.y - current.y };
     const incomingLength = Math.hypot(incoming.x, incoming.y);
     const outgoingLength = Math.hypot(outgoing.x, outgoing.y);
-    if (incomingLength < 3 || outgoingLength < 3) continue;
+    if (incomingLength <= Number.EPSILON || outgoingLength <= Number.EPSILON) continue;
     const cosine = (incoming.x * outgoing.x + incoming.y * outgoing.y) / (incomingLength * outgoingLength);
     if (cosine < 0.45) sharpTurns += 1;
   }
 
   const width = maxX - minX;
   const height = maxY - minY;
-  const aspectRatio = width / Math.max(height, 1);
-  const aspectError = Math.abs(Math.log(Math.max(aspectRatio, 0.001)));
+  const aspectRatio = width / Math.max(height, Number.EPSILON);
+  const aspectError = Math.abs(Math.log(Math.max(aspectRatio, Number.EPSILON)));
   return {
     center,
     radius,
@@ -80,14 +80,14 @@ function estimateCircle(stroke: RuneStroke): CircleEstimate | null {
     closureDistance: distance(points[0], points[points.length - 1]),
     circularity: radialDeviation + aspectError,
     angularTravel,
-    angularConsistency: Math.abs(signedAngularTravel) / Math.max(angularTravel, 1),
+    angularConsistency: Math.abs(signedAngularTravel) / Math.max(angularTravel, Number.EPSILON),
     sharpTurns,
   };
 }
 
-function isCircle(estimate: CircleEstimate, dimension: number) {
-  const closureTolerance = Math.max(14, dimension * 0.035);
-  const circumferenceRatio = estimate.pathLength / Math.max(FULL_TURN * estimate.radius, 1);
+function isCircle(estimate: CircleEstimate) {
+  const closureTolerance = Math.max(Number.EPSILON, estimate.radius * 0.45);
+  const circumferenceRatio = estimate.pathLength / Math.max(FULL_TURN * estimate.radius, Number.EPSILON);
   return (
     estimate.sharpTurns <= 1 &&
     estimate.closureDistance <= closureTolerance &&
@@ -113,11 +113,10 @@ function makeFreezeRecognition(
 
 /** Recognize exactly two nearby, closed circular strokes with a shared center. */
 export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: number): RuneRecognition {
-  const dimension = Math.max(1, arenaDimension);
+  void arenaDimension;
   const minimumLength = 0;
   const minimumStrokeLengths = [0, 0];
-  const positionTolerance = Math.max(36, dimension * 0.1);
-  const centerTolerance = Math.max(24, dimension * 0.065);
+
 
   if (strokes.length === 0) {
     return makeFreezeRecognition(strokes, minimumLength, minimumStrokeLengths, {
@@ -143,7 +142,7 @@ export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: nu
   for (let index = 0; index < strokes.length; index += 1) {
     const stroke = strokes[index];
     const circle = estimateCircle(stroke);
-    if (!circle || !isCircle(circle, dimension)) {
+    if (!circle || !isCircle(circle)) {
       return makeFreezeRecognition(strokes, minimumLength, minimumStrokeLengths, {
         recognized: false,
         stage: index === 0 ? "first-stroke" : "second-stroke",
@@ -161,6 +160,7 @@ export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: nu
       const previousEndTime = strokeEndTime(previous);
       const currentStartTime = strokeStartTime(stroke);
       const pauseMs = previousEndTime !== undefined && currentStartTime !== undefined ? currentStartTime - previousEndTime : undefined;
+      const positionTolerance = Math.max(Number.EPSILON, circles[0].radius * 1.35);
       if (pauseMs !== undefined && pauseMs < 0) {
         return makeFreezeRecognition(strokes, minimumLength, minimumStrokeLengths, {
           recognized: false,
@@ -194,9 +194,12 @@ export function recognizeFreezeStrokes(strokes: RuneStroke[], arenaDimension: nu
   }
 
   const reference = circles[0];
+  const centerTolerance = Math.max(Number.EPSILON, Math.max(...circles.map((circle) => circle.radius)) * 0.55);
   const centersAreConcentric = circles.every((circle) => distance(reference.center, circle.center) <= centerTolerance);
   const radii = circles.map((circle) => circle.radius);
-  const radiiAreDistinct = radii.every((radius, index) => radii.every((other, otherIndex) => index === otherIndex || Math.abs(radius - other) >= Math.max(8, dimension * 0.015)));
+  const radiiAreDistinct = radii.every((radius, index) =>
+    radii.every((other, otherIndex) => index === otherIndex || Math.abs(radius - other) >= Math.max(Number.EPSILON, Math.min(radius, other) * 0.18)),
+  );
   if (!centersAreConcentric || !radiiAreDistinct) {
     return makeFreezeRecognition(strokes, minimumLength, minimumStrokeLengths, {
       recognized: false,

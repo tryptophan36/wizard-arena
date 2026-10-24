@@ -31,6 +31,7 @@ export default function ArenaShell({ mode = "duel" }: { mode?: ArenaMode }) {
   const [playerHealth, setPlayerHealth] = useState(100);
   const [enemyActivity, setEnemyActivity] = useState<EnemyActivity>("waiting");
   const [gameState, setGameState] = useState<ArenaGameState>("playing");
+  const [countdown, setCountdown] = useState<number | null>(isPractice ? null : 3);
   const [cooldown, setCooldown] = useState(0);
   const [enemyCooldown, setEnemyCooldown] = useState(0);
   const [phase, setPhase] = useState<"ready" | "charging" | "flying" | "impact">("ready");
@@ -40,8 +41,9 @@ export default function ArenaShell({ mode = "duel" }: { mode?: ArenaMode }) {
 
   return (
     <main className={`arena-shell${isPractice ? " arena-practice" : ""}`}>
-      <PhaserArena mode={mode} spellId={initialSpellId} drawingTool={drawingTool} restartKey={restartKey} onManaChange={setMana} onEnemyManaChange={setEnemyMana} onTargetHealthChange={setHealth} onPlayerHealthChange={setPlayerHealth} onEnemyActivityChange={setEnemyActivity} onGameStateChange={setGameState} onCooldownChange={setCooldown} onEnemyCooldownChange={setEnemyCooldown} onPhaseChange={setPhase} onGestureChange={setGesture} onSpellChange={setSpellId} />
+      <PhaserArena mode={mode} spellId={initialSpellId} drawingTool={drawingTool} restartKey={restartKey} onManaChange={setMana} onEnemyManaChange={setEnemyMana} onTargetHealthChange={setHealth} onPlayerHealthChange={setPlayerHealth} onEnemyActivityChange={setEnemyActivity} onGameStateChange={setGameState} onCountdownChange={setCountdown} onCooldownChange={setCooldown} onEnemyCooldownChange={setEnemyCooldown} onPhaseChange={setPhase} onGestureChange={setGesture} onSpellChange={setSpellId} />
       <div className="vignette" />
+      {countdown !== null && <div className="duel-countdown" role="status" aria-live="assertive"><p className="eyebrow">DUEL STARTING</p><strong key={countdown}>{countdown}</strong></div>}
       <header className="hud top-hud">
         <div className="brand-lockup"><div className="brand-mark">✦</div><div><p className="eyebrow">THE ARCANE CIRCUIT</p><h1>WIZARD ARENA</h1></div></div>
         <div className="round-status"><span className="status-dot" /><span>{isPractice ? "PRACTICE / FREE-CAST" : "TRIAL 01"}</span><i /><span>{spell.school}</span><i /><span>{isPractice ? "PASSIVE TARGET" : `WARDEN ${enemyActivity.toUpperCase()}`}</span></div>
